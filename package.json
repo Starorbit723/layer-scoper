@@ -4,14 +4,15 @@
   "description": "A front-end focus movement framework that supports keyboard/remote control/mouse simultaneously",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Starorbit723/layer-scoper.git"
   },
+  "type": "module",
   "keywords": [],
-  "author": "",
+  "author": "Starorbit723",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Starorbit723/layer-scoper/issues"
