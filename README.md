@@ -1,9 +1,9 @@
-# Layer-Scoper
+## Layer-Scoper
 
-[Layer-Scoper 官方文档 — GitHub](https://starorbit723.github.io/layer-scoper/)
+[<a href="https://starorbit723.github.io/layer-scoper/" target="_blank" rel="noopener noreferrer">Layer-Scoper 官方文档 — GitHub</a>]
 
 
-# 安装
+## 安装
 
 npm 安装 
 
@@ -12,7 +12,7 @@ npm 安装
 安装指定版本:   npm install layer-scoper@1.0.0
 
 
-# 简介
+## 简介
 
 一款能够同时支持 键盘/遥控/鼠标/触屏 交互的浏览器前端外骨骼交互框架
 
