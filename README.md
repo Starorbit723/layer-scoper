@@ -1,6 +1,6 @@
 ## Layer-Scoper
 
-[<a href="https://starorbit723.github.io/layer-scoper/" target="_blank" rel="noopener noreferrer">Layer-Scoper 官方文档 — GitHub</a>]
+<a href="https://starorbit723.github.io/layer-scoper/" target="_blank" rel="noopener noreferrer">Layer-Scoper 官方文档 — GitHub</a>
 
 
 ## 安装
