@@ -1,4 +1,29 @@
 # Layer-Scoper
 
-## 一款能够同时支持 键盘/遥控/鼠标/触屏 交互的浏览器前端外骨骼交互框架
-A front-end focus movement framework that supports keyboard/remote control/mouse simultaneously
+[Layer-Scoper 官方文档 — GitHub](https://github.com/Starorbit723/layer-scoper)
+
+
+# 安装
+
+npm 安装 
+
+默认安装最新版本:   npm install layer-scoper
+
+安装指定版本:   npm install layer-scoper@1.0.0
+
+
+# 简介
+
+一款能够同时支持 键盘/遥控/鼠标/触屏 交互的浏览器前端外骨骼交互框架
+
+随着Web响应式适配的发展以及性能提升，越来越多的应用会引入一部分Web-Html来进行与原生混合开发。Web模式开发在产品快速迭代，热更新等方面拥有更灵活的优势。
+
+但是随之而来的问题就暴露在Web浏览器内核本身并非为非触控式设备而生，大多数Web应用都是建立在鼠标点击(OnClick)，手指点击(OnTap)，滚动(OnScroll)，滑动(OnTouchMove)等场景来触发交互。
+
+Web内核面向电视遥控器，方向控制器，第三方硬件控制器等非触控设备，并没有任何硬件适配的支持，非常不利于用户交互操作。
+
+Layer Scoper 因此而生! 解决了用户只通过“上，下，左，右，确认，返回”六个键值来进行Web页面交互的问题，简单，高效，灵活易用。 Layer Scoper核心设计理念，包含以下三大优势:
+
+   · 对开发者和用户双向友好，学习成本很低，兼容性极强。所见即所得，"键"随心动的体验感受。
+   · 不依赖于任何开发框架，Java Script原生级别封装，多种方式引入，一键式初始化，开箱即用。
+   · 代码体量极小但功能强大，内置API丰富，生命周期预留充分，以开发者视角来设计的代码架构。
