@@ -1,2 +1,3 @@
-var a = 1;
-export default a;
+import { LayerScoper } from './plugin/layerScoper.js';
+
+export default LayerScoper;

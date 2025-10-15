@@ -1,8 +1,9 @@
 {
   "name": "layer-scoper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A front-end focus movement framework that supports keyboard/remote control/mouse simultaneously",
   "main": "index.js",
+  "module": "index.js",
   "scripts": {
     "test": "npm run test",
     "dev": "node server.cjs",
@@ -21,26 +22,39 @@
   },
   "homepage": "https://github.com/Starorbit723/layer-scoper#readme",
   "dependencies": {
+    "layer-scoper": "^1.0.1",
+    "preact": "^10.23.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "vue": "^2.7.16",
-    "preact": "^10.23.2"
+    "vue": "^2.7.16"
   },
   "devDependencies": {
-    "http-server": "^14.1.1",
-    "vite": "^4.5.5",
     "@vitejs/plugin-vue2": "^2.2.0",
-    "vue-template-compiler": "^2.7.16",
+    "css-loader": "^6.10.0",
+    "express": "^4.19.2",
+    "html-webpack-plugin": "^5.6.0",
+    "http-server": "^14.1.1",
     "less": "^4.2.0",
+    "less-loader": "^12.2.0",
+    "style-loader": "^3.3.4",
+    "vite": "^4.5.5",
+    "vue-loader": "^15.11.1",
+    "vue-template-compiler": "^2.7.16",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-middleware": "^7.4.2",
-    "webpack-hot-middleware": "^2.26.1",
-    "html-webpack-plugin": "^5.6.0",
-    "vue-loader": "^15.11.1",
-    "css-loader": "^6.10.0",
-    "style-loader": "^3.3.4",
-    "less-loader": "^12.2.0",
-    "express": "^4.19.2"
-  }
+    "webpack-hot-middleware": "^2.26.1"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "plugin/layerScoper.js",
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ]
 }
