@@ -797,10 +797,14 @@ export function LayerScoper() {
 
   this.onFocusMouseClick = (domObj) => {
     const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
-    const _target = domObj?.target;
+    const eventCurrentTarget = domObj?.currentTarget;
+    // 允许子元素点击冒泡到父级 .incontroll，统一使用 currentTarget 读取父级属性
+    if (!eventCurrentTarget) {
+      return;
+    }
+    const _target = eventCurrentTarget;
     try {
       // 先改变焦点
-      console.warn('domObj', domObj);
       if (currentMap.currentY !== parseFloat(_target.attributes?.y.value) || currentMap.currentX !== parseFloat(_target.attributes?.x.value)) {
         currentMap.lastY = currentMap.currentY;
         currentMap.lastX = currentMap.currentX;

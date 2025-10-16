@@ -1,13 +1,13 @@
 <template>
-  <div id="content" class="content-wrapper">
+  <div id="content" class="content-wrapper clearfix">
     <div class="demo-header">
       <img class="demo-header-logo" :src="logo" alt="logo" />
       <span class="demo-header-title">Vue2 - 示例页面</span>
       <a class="demo-header-back" href="../index.html">返回目录</a>
     </div>
     <!--同步的数据列表 1-->
-    <div class="demo-list clearfix demo-list1">
-      <div class="demo-list-title">同步的数据列表 1</div>
+    <div class="demo-list clearfix">
+      <div class="demo-list-title">同步的数据列表 - 基础能力</div>
       <div class="demo-list-content clearfix scoped" data-scoped="1">
         <div
           v-for="item1 in demoDataList1" :key="item1.id"
@@ -18,9 +18,9 @@
         </div>
       </div>
     </div>
-    <!--异步的数据列表 2-->
-    <div class="demo-list clearfix demo-list2" v-if="demoDataList2.length > 0">
-      <div class="demo-list-title">异步的数据列表 2</div>
+    <!--同步的数据列表 2-->
+    <div class="demo-list clearfix" v-if="demoDataList2.length > 0">
+      <div class="demo-list-title">同步的数据列表 - className: openboundary (开放边界)，可移动到上一个或下一个scope</div>
       <div class="demo-list-content clearfix scoped openboundary" data-scoped="2">
         <div v-for="item2 in demoDataList2" :key="item2.id" class="incontroll demo-list-item">
           <div class="demo-list-item-title">{{item2.title}}</div>
@@ -29,8 +29,8 @@
       </div>
     </div>
     <!--同步的数据列表 3-->
-    <div class="demo-list clearfix demo-list3">
-      <div class="demo-list-title">同步的数据列表 3</div>
+    <div class="demo-list clearfix">
+      <div class="demo-list-title">同步的数据列表 - className: remembered (记忆焦点)， 记忆上次该Scoped的落焦点</div>
       <div class="demo-list-content clearfix scoped remembered" data-scoped="3">
         <div v-for="item3 in demoDataList3" :key="item3.id" class="incontroll demo-list-item">
           <div class="demo-list-item-title">{{item3.title}}</div>
@@ -39,15 +39,26 @@
       </div>
     </div>
     <!--同步的数据列表 4-->
-    <div class="demo-list clearfix demo-list4">
-      <div class="demo-list-title">同步的数据列表 4</div>
-      <div class="demo-list-content clearfix scoped" data-scoped="4">
+    <div class="demo-list clearfix">
+      <div class="demo-list-title">同步的数据列表 - className: transit (内部穿行)， 可在同一个scope内部上下移动焦点</div>
+      <div class="demo-list-content clearfix scoped transit" data-scoped="4">
         <div v-for="item4 in demoDataList4" :key="item4.id" class="incontroll demo-list-item">
           <div class="demo-list-item-title">{{item4.title}}</div>
           <div class="demo-list-item-description">{{item4.description}}</div>
         </div>
       </div>
     </div>
+    <!--异步的数据列表 5-->
+    <div class="demo-list clearfix" v-if="demoDataList5.length > 0">
+      <div class="demo-list-title">异步的数据列表</div>
+      <div class="demo-list-content clearfix scoped" data-scoped="5">
+        <div v-for="item5 in demoDataList5" :key="item5.id" class="incontroll demo-list-item">
+          <div class="demo-list-item-title">{{item5.title}}</div>
+          <div class="demo-list-item-description">{{item5.description}}</div>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix"></div>
   </div>
 </template>
 
@@ -66,31 +77,36 @@ export default {
     return {
       logo,
       demoDataList1: [
-        { id: 1, title: '示例1-1', description: ''},
-        { id: 2, title: '示例1-2', description: ''},
-        { id: 3, title: '示例1-3', description: ''},
-        { id: 4, title: '示例1-4', description: ''},
+        { id: 1, title: 'Item-1-1', description: ''},
+        { id: 2, title: 'Item-1-2', description: ''},
+        { id: 3, title: 'Item-1-3', description: ''},
+        { id: 4, title: 'Item-1-4', description: ''},
       ],
       demoDataList2: [
-        { id: 1, title: '示例2-1', description: ''},
-        { id: 2, title: '示例2-2', description: ''},
-        { id: 3, title: '示例2-3', description: ''},
-        { id: 4, title: '示例2-4', description: ''},
+        { id: 1, title: 'Item-2-1', description: '按左键可至上一个scope'},
+        { id: 2, title: 'Item-2-2', description: ''},
+        { id: 3, title: 'Item-2-3', description: ''},
+        { id: 4, title: 'Item-2-4', description: '按右键可至下一个scope'},
       ],
       demoDataList3: [
-        { id: 1, title: '示例3-1', description: ''},
-        { id: 2, title: '示例3-2', description: ''},
-        { id: 3, title: '示例3-3', description: ''},
-        { id: 4, title: '示例3-4', description: ''},
+        { id: 1, title: 'Item-3-1', description: ''},
+        { id: 2, title: 'Item-3-2', description: ''},
+        { id: 3, title: 'Item-3-3', description: ''},
+        { id: 4, title: 'Item-3-4', description: ''},
       ],
       demoDataList4: [
-        { id: 1, title: '示例4-1', description: ''},
-        { id: 2, title: '示例4-2', description: ''},
-        { id: 3, title: '示例4-3', description: ''},
-        { id: 4, title: '示例4-4', description: ''},
-        { id: 5, title: '示例4-5', description: ''},
-        { id: 6, title: '示例4-6', description: ''},
-      ]
+        { id: 1, title: 'Item-4-1', description: ''},
+        { id: 2, title: 'Item-4-2', description: ''},
+        { id: 3, title: 'Item-4-3', description: ''},
+        { id: 4, title: 'Item-4-4', description: ''},
+        { id: 5, title: 'Item-4-5', description: ''},
+        { id: 6, title: 'Item-4-6', description: ''},
+        { id: 7, title: 'Item-4-7', description: ''},
+        { id: 8, title: 'Item-4-8', description: ''},
+        { id: 9, title: 'Item-4-9', description: ''},
+        { id: 10, title: 'Item-4-10', description: ''},
+      ],
+      demoDataList5: [],
     };
   },
   computed: {
@@ -106,13 +122,13 @@ export default {
     });
     // 模拟异步数据
     setTimeout(() => {
-      this.demoDataList4 = [
-        { id: 1, title: '示例4-1', description: '可获焦元素'},
-        { id: 2, title: '示例4-2', description: '可获焦元素'},
-        { id: 3, title: '示例4-3', description: '可获焦元素'},
-        { id: 4, title: '示例4-4', description: '可获焦元素'},
-        { id: 5, title: '示例4-5', description: '可获焦元素'},
-        { id: 6, title: '示例4-6', description: '可获焦元素'},
+      this.demoDataList5 = [
+        { id: 1, title: 'Item-5-1', description: ''},
+        { id: 2, title: 'Item-5-2', description: ''},
+        { id: 3, title: 'Item-5-3', description: ''},
+        { id: 4, title: 'Item-5-4', description: ''},
+        { id: 5, title: 'Item-5-5', description: ''},
+        { id: 6, title: 'Item-5-6', description: ''},
       ];
       /*
         这里要注意：当数据异步更新后，需要等DOM渲染完成后再调用update方法
@@ -121,7 +137,7 @@ export default {
       this.$nextTick(() => {
         LayerScoperCase.update({
           id: 'content',
-          needUpdateScoped: 4,
+          needUpdateScoped: 5,
         });
       });
     }, 1000);
@@ -135,7 +151,7 @@ export default {
 
 <style lang="less" scoped>
 .content-wrapper {
-
+  padding-bottom: 200px;
 }
 
 </style>
