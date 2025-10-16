@@ -29,7 +29,14 @@ module.exports = {
     rules: [
       { test: /\.vue$/, loader: 'vue-loader' },
       { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
-      { test: /\.less$/i, use: ['style-loader', 'css-loader', 'less-loader'] }
+      { test: /\.less$/i, use: ['style-loader', 'css-loader', 'less-loader'] },
+      {
+        test: /\.(png|jpe?g|gif|svg)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'assets/images/[name][hash][ext]'
+        }
+      }
     ]
   },
   resolve: {

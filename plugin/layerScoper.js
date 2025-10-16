@@ -145,8 +145,8 @@ export const twoPointDistanceSameScoped = ({ currentPoint, nextEle, direct }) =>
 };
 
 export const scopedCompare = () => (a, b) => {
-  const value1 = a.attributes.scoped.value;
-  const value2 = b.attributes.scoped.value;
+  const value1 = a.attributes["data-scoped"].value;
+  const value2 = b.attributes["data-scoped"].value;
   if (value1 === value2) {
     Loger.error(`same scoped number is not allowed, scoped=${value1}`);
     throw new Error(`Same scoped number is not allowed, scoped=${value1}`);
@@ -800,6 +800,7 @@ export function LayerScoper() {
     const _target = domObj?.target;
     try {
       // 先改变焦点
+      console.warn('domObj', domObj);
       if (currentMap.currentY !== parseFloat(_target.attributes?.y.value) || currentMap.currentX !== parseFloat(_target.attributes?.x.value)) {
         currentMap.lastY = currentMap.currentY;
         currentMap.lastX = currentMap.currentX;
@@ -902,7 +903,8 @@ export function LayerScoper() {
     controllerMaps[params.id] = {};
 
     const creatIndex = controllerIds.indexOf(params?.id);
-
+    console.warn(creatIndex);
+    console.warn(controllerIds);
     // 是否需要滚动
     controllerMaps[params.id].needScroll = params?.needScroll || false;
     if (controllerMaps[params.id].needScroll && !controllerMaps[params.id].scrollData) {
@@ -1003,33 +1005,36 @@ export function LayerScoper() {
     controllerMaps[controllerIds[creatIndex]].recordList = [];
     controllerMaps[controllerIds[creatIndex]].openBoundaryList = [];
     controllerMaps[controllerIds[creatIndex]].scrollzoneList = [];
+
+    console.warn(_scopedList);
     _scopedList.forEach((ele) => {
       // 初始化或者添加新层级的时候，为了渲染性能，如果scoped里面的DOM为空，就不创建该位置以及标识记录数组，但是update方法会创建标识记录数组
       if (ele.querySelectorAll('.incontroll').length > 0) {
       // if (ele.childNodes.length > 0) {
         controllerMaps[controllerIds[creatIndex]].domList.push([]);
-        controllerMaps[controllerIds[creatIndex]].stepList.push(parseFloat(ele.attributes.scoped.value));
+        console.warn(ele.attributes);
+        controllerMaps[controllerIds[creatIndex]].stepList.push(parseFloat(ele.attributes["data-scoped"].value));
         // 可在同一个scope内部上下移动焦点
         if (ele.classList.value.indexOf('transit') !== -1) {
-          controllerMaps[controllerIds[creatIndex]].transitList.push(parseFloat(ele.attributes.scoped.value));
+          controllerMaps[controllerIds[creatIndex]].transitList.push(parseFloat(ele.attributes["data-scoped"].value));
         }
         // 需要记录焦点，下次直接落焦到之前焦点上
         if (ele.classList.value.indexOf('remembered') !== -1) {
-          controllerMaps[controllerIds[creatIndex]].recordList.push(parseFloat(ele.attributes.scoped.value));
+          controllerMaps[controllerIds[creatIndex]].recordList.push(parseFloat(ele.attributes["data-scoped"].value));
         }
         // 需要开放边界
         if (ele.classList.value.indexOf('openboundary') !== -1) {
-          controllerMaps[controllerIds[creatIndex]].openBoundaryList.push(parseFloat(ele.attributes.scoped.value));
+          controllerMaps[controllerIds[creatIndex]].openBoundaryList.push(parseFloat(ele.attributes["data-scoped"].value));
         }
         // 可以滚动的区域
         if (ele.classList.value.indexOf('scrollzone') !== -1) {
-          controllerMaps[controllerIds[creatIndex]].scrollzoneList.push(parseFloat(ele.attributes.scoped.value));
+          controllerMaps[controllerIds[creatIndex]].scrollzoneList.push(parseFloat(ele.attributes["data-scoped"].value));
         }
         // className = incontroll 不一定在childNodes第一层
         ele.querySelectorAll('.incontroll').forEach((ele2, index2) => {
         // ele.childNodes.forEach((ele2, index2) => {
-          ele2.setAttribute('locationname', `ln_${(ele.attributes.scoped.value).toString()}_${(index2 + 1).toString()}`);
-          ele2.setAttribute('y', parseFloat(ele.attributes.scoped.value));
+          ele2.setAttribute('locationname', `ln_${(ele.attributes["data-scoped"].value).toString()}_${(index2 + 1).toString()}`);
+          ele2.setAttribute('y', parseFloat(ele.attributes["data-scoped"].value));
           ele2.setAttribute('x', index2 + 1);
           // 给每个节点添加鼠标点击事件监听
           ele2.removeEventListener('click', this.onFocusMouseClick);
@@ -1189,6 +1194,7 @@ export function LayerScoper() {
     Loger.info(`updateData: needUpdateScoped：${needUpdateScoped}`);
     if (isInitFinish && controllerIds.indexOf(id) !== -1) {
       const _scopedList = Array.prototype.slice.call(document.getElementById(id).getElementsByClassName('scoped'));
+      console.warn(_scopedList);
       // 判断是否是新的节点数据
       const updateIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
       const _updateData = [];
@@ -1200,7 +1206,8 @@ export function LayerScoper() {
 
       // 更新needUpdateScoped下所有节点
       _scopedList.forEach((ele) => {
-        if (ele.attributes.scoped.value === needUpdateScoped.toString()) {
+        if (ele.attributes["data-scoped"].value === needUpdateScoped.toString()) {
+          console.warn(ele);
           _matchScopedValue = true;
           if (ele.classList.value.indexOf('remembered') !== -1) {
             _needRecord = true;
@@ -1214,11 +1221,13 @@ export function LayerScoper() {
           if (ele.classList.value.indexOf('scrollzone') !== -1) {
             _needScrollzone = true;
           }
+          console.warn('11111', ele.querySelectorAll('.incontroll'));
           if (ele.querySelectorAll('.incontroll').length > 0) {
-            // if (ele.childNodes.length > 0 && ele.attributes.scoped.value === needUpdateScoped.toString()) {
+            // if (ele.childNodes.length > 0 && ele.attributes["data-scoped"].value === needUpdateScoped.toString()) {
             // className = incontroll 不一定在childNodes第一层
             ele.querySelectorAll('.incontroll').forEach((ele2, index2) => {
             // ele.childNodes.forEach((ele2, index2) => {
+              console.warn('ele2', ele2);
               ele2.setAttribute('locationname', `ln_${needUpdateScoped.toString()}_${(index2 + 1).toString()}`);
               ele2.setAttribute('y', needUpdateScoped);
               ele2.setAttribute('x', index2 + 1);

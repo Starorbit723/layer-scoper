@@ -1,0 +1,97 @@
+/* Global styles across all demos */
+*{
+  margin: 0;
+  padding: 0;
+}
+body {
+  margin: 0;
+  font-size: 14px;
+  font-family: '微软雅黑', 'Arial', 'Helvetica', 'sans-serif';
+  background: #ffffff;
+  color: #000;
+}
+img{
+  display: block;
+}
+a {
+  color: #2563eb;
+  text-decoration: none;
+  &:hover { cursor: pointer; }
+}
+button { cursor: pointer; }
+.clearfix{
+  clear: both;
+  *zoom: 1;
+}
+
+
+/* 演示页 - 页头 */
+.demo-header {
+  height: 50px;
+  line-height: 50px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  .demo-header-logo{
+    height: 50px;
+    margin-left: 10px;
+    float: left;
+  }
+  .demo-header-title{
+    margin-left: 10px;
+    float: left;
+    font-weight: 700;
+  }
+  .demo-header-back{
+    margin-right: 20px;
+    float: right;
+    color: #03bdad;
+    font-weight: 700;
+  }
+}
+
+/* 演示页 - 列表 */
+.demo-list{
+  width: 96%;
+  padding: 20px 2% 0;
+  user-select: none;
+  .demo-list-title{
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .demo-list-content{
+    height: auto;
+    .demo-list-item{
+      float: left;
+      width: 15%;
+      height: 100px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      text-align: center;
+      line-height: 50px;
+      cursor: pointer;
+      .demo-list-item-title{
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .demo-list-item-description{
+        font-size: 12px;
+      }
+      
+    }
+    .incontroll.focus{
+      background-color: #e05514;
+      color: #FFF;
+      font-weight: 700;
+    }
+    .incontroll.selected{
+      border: 1px dashed #e05514;
+    }
+  }
+}
+
+
+

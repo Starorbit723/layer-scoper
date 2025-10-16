@@ -1,5 +1,5 @@
 import React from 'react';
-import '@/assets/css/global.css';
+import '@/assets/css/global.less';
 import Counter from '@components/react/Counter.jsx';
 
 export default function App() {

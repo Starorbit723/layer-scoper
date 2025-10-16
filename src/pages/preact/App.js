@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import '@/assets/css/global.css';
+import '@/assets/css/global.less';
 import { Counter } from '@components/preact/Counter.js';
 
 export default function App() {
