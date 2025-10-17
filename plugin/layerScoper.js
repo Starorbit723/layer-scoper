@@ -318,7 +318,9 @@ export function LayerScoper() {
     const _id = controllerIds[wakeUpIndex];
     const outerDom = document.getElementById(_id).querySelectorAll('.scrollzone')[currentMap.scrollzoneList.indexOf(currentMap.currentY)];
     const innerDom = outerDom?.querySelector(':scope > .scoped-incontroll-scroll');
-    if (!(outerDom && innerDom)) {
+    console.warn('666666666666666', outerDom, innerDom);
+    // if (!(outerDom && innerDom)) {
+    if (!outerDom || !innerDom) {
       Loger.info(`currentScopeScroll don't need to scopezone scroll`);
       return;
     }
@@ -328,6 +330,7 @@ export function LayerScoper() {
       innerWidth: innerDom.clientWidth,
       innerHeight: innerDom.clientHeight,
     };
+    console.warn('777777777777777', _currentScoped);
     const focusDom = currentMap.domList[currentMap.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1];
     // focusDom几何中点相对于父级左边和顶部的距离，实际屏幕显示的真实距离值
     const relativeFather = {
@@ -357,6 +360,7 @@ export function LayerScoper() {
       */
       const cha = relativeFather.focusCenterToFatherLeft - (_currentScoped.outerWidth * 0.5 * Scrren_Multipler);
       const scrollVal = ((outerDom.scrollLeft * Scrren_Multipler) + cha) / Scrren_Multipler;
+      console.warn('888888888888888', cha, scrollVal);
       outerDom.scrollTo(scrollVal, 0);
     }
   };
@@ -936,9 +940,11 @@ export function LayerScoper() {
         横向滚动时，map-incontroll-scroll必须是display:inline-block, width: auto
       */
       const innerDom = outerDom.querySelector(':scope > .map-incontroll-scroll');
-      if (innerDom) {
+      if ((controllerMaps[params.id].scrollDirection === 'horizontal') && innerDom) {
         innerDom.style.display = 'inline-block';
         innerDom.style.width = 'auto';
+      } else if ((controllerMaps[params.id].scrollDirection === 'vertical') && innerDom) {
+        Loger.info('addNewLevelData: scrollDirection is vertical');
       } else {
         Loger.error(`addNewLevelData: "className .map-incontroll-scroll" must at first level childNode for the parent id=${params.id}`);
         delete controllerMaps[params.id];

@@ -90,7 +90,42 @@ button { cursor: pointer; }
       font-weight: 700;
     }
     .incontroll.selected{
-      border: 1px dashed #e05514;
+      border: 2px dashed #e05514;
+    }
+  }
+  .demo-list-scrollcontent{
+    overflow-y: scroll;
+    overflow-x: scroll;
+    .scoped-incontroll-scroll{
+      width: auto;
+      height: auto;
+      display: inline-block;
+      white-space: nowrap;
+      .demo-list-scrollitem{
+        display: inline-block;
+        box-sizing: border-box;
+        width: 160px;
+        height: 100px;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        text-align: center;
+        line-height: 50px;
+        cursor: pointer;
+        .demo-list-scrollitem-title{
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .demo-list-scrollitem-description{
+          font-size: 12px;
+        }
+      }
+      .incontroll.focus{
+        background-color: #e05514;
+        color: #FFF;
+        font-weight: 700;
+      }
     }
   }
 }
