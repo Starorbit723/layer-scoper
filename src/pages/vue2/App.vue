@@ -52,7 +52,7 @@
         </div>
         <!--滚动的数据列表 5-->
         <div class="demo-list clearfix">
-          <div class="demo-list-title">滚动数据列表 - className: scrollzone (滚动区域)</div>
+          <div class="demo-list-title">滚动数据列表 - className: scrollzone (滚动区域)  滚动条样式不美观LayerScoper不做处理，由业务方自定义CSS来处理/美化/隐藏</div>
           <div class="demo-list-scrollcontent clearfix scoped scrollzone" data-scoped="5">
             <!-- scoped-incontroll-scroll 表示滚动的内层容器，需要放在 scrollzone 的子元素中 -->
             <div class="scoped-incontroll-scroll">
