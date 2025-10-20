@@ -223,7 +223,6 @@ export const changeCurrentFocus = ({ currentMap, direct }) => {
   }
   // 当某个已经落焦点所在的Scope DOM被重新渲染了,系统会矫正再重新找一个落焦点
   if (direct === 'system' && currentMap.domList[_lastSearchYIndex].length > 0) {
-    console.warn('system last length > 0', currentMap.domList[_lastSearchYIndex], currentMap.domList[_lastSearchYIndex].length);
     currentMap.domList[_lastSearchYIndex].forEach((ele) => {
       ele.classList.remove('focus');
     });
@@ -318,7 +317,6 @@ export function LayerScoper() {
     const _id = controllerIds[wakeUpIndex];
     const outerDom = document.getElementById(_id).querySelectorAll('.scrollzone')[currentMap.scrollzoneList.indexOf(currentMap.currentY)];
     const innerDom = outerDom?.querySelector(':scope > .scoped-incontroll-scroll');
-    console.warn('666666666666666', outerDom, innerDom);
     // if (!(outerDom && innerDom)) {
     if (!outerDom || !innerDom) {
       Loger.info(`currentScopeScroll don't need to scopezone scroll`);
@@ -330,7 +328,6 @@ export function LayerScoper() {
       innerWidth: innerDom.clientWidth,
       innerHeight: innerDom.clientHeight,
     };
-    console.warn('777777777777777', _currentScoped);
     const focusDom = currentMap.domList[currentMap.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1];
     // focusDom几何中点相对于父级左边和顶部的距离，实际屏幕显示的真实距离值
     const relativeFather = {
@@ -360,7 +357,6 @@ export function LayerScoper() {
       */
       const cha = relativeFather.focusCenterToFatherLeft - (_currentScoped.outerWidth * 0.5 * Scrren_Multipler);
       const scrollVal = ((outerDom.scrollLeft * Scrren_Multipler) + cha) / Scrren_Multipler;
-      console.warn('888888888888888', cha, scrollVal);
       outerDom.scrollTo(scrollVal, 0);
     }
   };
@@ -911,8 +907,6 @@ export function LayerScoper() {
     controllerMaps[params.id] = {};
 
     const creatIndex = controllerIds.indexOf(params?.id);
-    console.warn(creatIndex);
-    console.warn(controllerIds);
     // 是否需要滚动
     controllerMaps[params.id].needScroll = params?.needScroll || false;
     if (controllerMaps[params.id].needScroll && !controllerMaps[params.id].scrollData) {
@@ -1016,13 +1010,11 @@ export function LayerScoper() {
     controllerMaps[controllerIds[creatIndex]].openBoundaryList = [];
     controllerMaps[controllerIds[creatIndex]].scrollzoneList = [];
 
-    console.warn(_scopedList);
     _scopedList.forEach((ele) => {
       // 初始化或者添加新层级的时候，为了渲染性能，如果scoped里面的DOM为空，就不创建该位置以及标识记录数组，但是update方法会创建标识记录数组
       if (ele.querySelectorAll('.incontroll').length > 0) {
       // if (ele.childNodes.length > 0) {
         controllerMaps[controllerIds[creatIndex]].domList.push([]);
-        console.warn(ele.attributes);
         controllerMaps[controllerIds[creatIndex]].stepList.push(parseFloat(ele.attributes["data-scoped"].value));
         // 可在同一个scope内部上下移动焦点
         if (ele.classList.value.indexOf('transit') !== -1) {
@@ -1204,7 +1196,6 @@ export function LayerScoper() {
     Loger.info(`updateData: needUpdateScoped：${needUpdateScoped}`);
     if (isInitFinish && controllerIds.indexOf(id) !== -1) {
       const _scopedList = Array.prototype.slice.call(document.getElementById(id).getElementsByClassName('scoped'));
-      console.warn(_scopedList);
       // 判断是否是新的节点数据
       const updateIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
       const _updateData = [];
@@ -1217,7 +1208,6 @@ export function LayerScoper() {
       // 更新needUpdateScoped下所有节点
       _scopedList.forEach((ele) => {
         if (ele.attributes["data-scoped"].value === needUpdateScoped.toString()) {
-          console.warn(ele);
           _matchScopedValue = true;
           if (ele.classList.value.indexOf('remembered') !== -1) {
             _needRecord = true;
@@ -1231,13 +1221,11 @@ export function LayerScoper() {
           if (ele.classList.value.indexOf('scrollzone') !== -1) {
             _needScrollzone = true;
           }
-          console.warn('11111', ele.querySelectorAll('.incontroll'));
           if (ele.querySelectorAll('.incontroll').length > 0) {
             // if (ele.childNodes.length > 0 && ele.attributes["data-scoped"].value === needUpdateScoped.toString()) {
             // className = incontroll 不一定在childNodes第一层
             ele.querySelectorAll('.incontroll').forEach((ele2, index2) => {
             // ele.childNodes.forEach((ele2, index2) => {
-              console.warn('ele2', ele2);
               ele2.setAttribute('locationname', `ln_${needUpdateScoped.toString()}_${(index2 + 1).toString()}`);
               ele2.setAttribute('y', needUpdateScoped);
               ele2.setAttribute('x', index2 + 1);
@@ -1304,7 +1292,6 @@ export function LayerScoper() {
           return;
         }
         if (controllerMaps[id].domList[controllerMaps[id].stepList.indexOf(needUpdateScoped)].length === 0) {
-          console.warn(needUpdateScoped, '清空了, 落焦去第一个点');
           let _systemFindtIndexY = -1;
           controllerMaps[id].domList.forEach((ele, index) => {
             if (ele.length > 0 && _systemFindtIndexY === -1) {
@@ -1317,7 +1304,6 @@ export function LayerScoper() {
           controllerMaps[id].currentY = controllerMaps[id].stepList[_systemFindtIndexY];
           controllerMaps[id].currentX = 1;
         } else {
-          console.warn(needUpdateScoped, '没清空, 该scoped还有数据');
           controllerMaps[id].lastY = controllerMaps[id].currentY;
           controllerMaps[id].lastX = controllerMaps[id].currentX;
           controllerMaps[id].currentY = needUpdateScoped;

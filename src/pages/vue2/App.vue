@@ -14,6 +14,7 @@
             <div
               v-for="item1 in demoDataList1" :key="item1.id"
               class="incontroll demo-list-item"
+              :binddata="JSON.stringify(item1)"
               >
               <div class="demo-list-item-title">{{item1.title}}</div>
               <div class="demo-list-item-description">{{item1.description}}</div>
@@ -24,7 +25,7 @@
         <div class="demo-list clearfix" v-if="demoDataList2.length > 0">
           <div class="demo-list-title">同步的数据列表 - className: openboundary (开放边界)，可移动到上一个或下一个scope</div>
           <div class="demo-list-content clearfix scoped openboundary" data-scoped="2">
-            <div v-for="item2 in demoDataList2" :key="item2.id" class="incontroll demo-list-item">
+            <div v-for="item2 in demoDataList2" :key="item2.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item2)">
               <div class="demo-list-item-title">{{item2.title}}</div>
               <div class="demo-list-item-description">{{item2.description}}</div>
             </div>
@@ -34,7 +35,7 @@
         <div class="demo-list clearfix">
           <div class="demo-list-title">同步的数据列表 - className: remembered (记忆焦点)， 记忆上次该Scoped的落焦点</div>
           <div class="demo-list-content clearfix scoped remembered" data-scoped="3">
-            <div v-for="item3 in demoDataList3" :key="item3.id" class="incontroll demo-list-item">
+            <div v-for="item3 in demoDataList3" :key="item3.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item3)">
               <div class="demo-list-item-title">{{item3.title}}</div>
               <div class="demo-list-item-description">{{item3.description}}</div>
             </div>
@@ -44,7 +45,7 @@
         <div class="demo-list clearfix">
           <div class="demo-list-title">同步的数据列表 - className: transit (内部穿行)， 可在同一个scope内部上下移动焦点</div>
           <div class="demo-list-content clearfix scoped transit" data-scoped="4">
-            <div v-for="item4 in demoDataList4" :key="item4.id" class="incontroll demo-list-item">
+            <div v-for="item4 in demoDataList4" :key="item4.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item4)">
               <div class="demo-list-item-title">{{item4.title}}</div>
               <div class="demo-list-item-description">{{item4.description}}</div>
             </div>
@@ -56,7 +57,7 @@
           <div class="demo-list-scrollcontent clearfix scoped scrollzone" data-scoped="5">
             <!-- scoped-incontroll-scroll 表示滚动的内层容器，需要放在 scrollzone 的子元素中 -->
             <div class="scoped-incontroll-scroll">
-              <div v-for="item5 in demoDataList5" :key="item5.id" class="incontroll demo-list-scrollitem">
+              <div v-for="item5 in demoDataList5" :key="item5.id" class="incontroll demo-list-scrollitem" :binddata="JSON.stringify(item5)">
                 <div class="demo-list-scrollitem-title">{{item5.title}}</div>
                 <div class="demo-list-scrollitem-description">{{item5.description}}</div>
               </div>
@@ -67,7 +68,7 @@
         <div class="demo-list clearfix" v-if="demoDataList6.length > 0">
           <div class="demo-list-title">异步的数据列表</div>
           <div class="demo-list-content clearfix scoped" data-scoped="6">
-            <div v-for="item6 in demoDataList5" :key="item6.id" class="incontroll demo-list-item">
+            <div v-for="item6 in demoDataList5" :key="item6.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item6)">
               <div class="demo-list-item-title">{{item6.title}}</div>
               <div class="demo-list-item-description">{{item6.description}}</div>
             </div>
@@ -145,6 +146,7 @@ export default {
     
   },
   mounted() {
+    // 初始化LayerScoper
     LayerScoperCase.initController({
       id: 'content',
       className: 'incontroll',
@@ -156,11 +158,20 @@ export default {
         trackWidth: '8px',
         trackBackground: 'rgba(255,255,255,0)',
         trackBorderRadius: '0',
-        thumbColor: 'rgb(25, 170, 6)',
+        thumbColor: 'rgba(3, 189, 173, 0.4)',
         thumbBorderWidth: '2px',
-        thumbBorderColor: 'rgb(25, 170, 6)',
+        thumbBorderColor: 'rgba(3, 189, 173, 1)',
         thumbBorderRadius: '4px',
-        thumbHoverColor: 'rgb(25, 170, 6)',
+        thumbHoverColor: 'rgba(3, 189, 173, 1)',
+      },
+      // LayerScoper默认的回调方法
+      callBackFn: {
+        cbFocusUp: this.onFocusUp,
+        cbFocusDown: this.onFocusDown,
+        cbFocusLeft: this.onFocusLeft,
+        cbFocusRight: this.onFocusRight,
+        cbBackSpace: this.onBackSpaceClick,
+        cbFocusChange: this.onFocusChange,
       },
     });
     // 模拟异步数据
@@ -184,10 +195,26 @@ export default {
         });
       });
     }, 1000);
-    
   },
   methods: {
-  
+    onFocusUp(data) {
+      console.warn('onFocusUp', data);
+    },
+    onFocusDown(data) {
+      console.warn('onFocusDown', data);
+    },
+    onFocusLeft(data) {
+      console.warn('onFocusLeft', data);
+    },
+    onFocusRight(data) {
+      console.warn('onFocusRight', data);
+    },
+    onBackSpaceClick(data) {
+      console.warn('onBackSpaceClick', data);
+    },
+    onFocusChange(data) {
+      console.warn('onFocusChange', data);
+    },
   },
 };
 </script>
@@ -195,7 +222,7 @@ export default {
 <style lang="less" scoped>
 .content-wrapper {
   width: 100%;
-  height: 800px;
+  height: calc(100vh - 50px);
   .map-incontroll-scroll{
 
   }
