@@ -130,4 +130,102 @@ button { cursor: pointer; }
 }
 
 
+/* 演示页 - 弹框 */
+.demo-dialog-wrapper{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  user-select: none;
+  .demo-dialog-content{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: auto;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+    .demo-dialog-title{
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      padding: 20px 0 0 10px;
+    }
+    .demo-dialog-body{
+      font-size: 14px;
+      line-height: 26px;
+      padding: 20px;
+      text-align: center;
+    }
+    .demo-dialog-footer{
+      font-size: 14px;
+      padding: 10px 0 20px 0;
+      text-align: center;
+      .demo-dialog-footer-button{
+        display: inline-block;
+        width: 100px;
+        height: 30px;
+        line-height: 30px;
+        border-radius: 5px;
+        text-align: center;
+        background-color: #f0f0f0;
+        color: #333;
+        margin-left: 15px;
+        cursor: pointer;
+      }
+      .demo-dialog-footer-button:first-child{
+        margin-left: 0;
+      }
+      .demo-dialog-footer-button.focus{
+        background-color: #e05514;
+        color: #fff;
+      }
+    }
+  }
+}
 
+/* 演示页 - 侧浮层 */
+.demo-aside-wrapper{
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 700px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  user-select: none;
+  .demo-aside-content-title{
+    height: 80px;
+    line-height: 80px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    color: #FFF;
+  }
+  .demo-aside-content-body{
+    height: calc(100% - 80px);
+    overflow-y: auto;
+    .demo-aside-content-item{
+      width: 30%;
+      height: 100px;
+      line-height: 50px;
+      text-align: center;
+      float: left;
+      background-color: rgba(255, 255, 255, 1);
+      border-radius: 5px;
+      margin-left: 2.5%;
+      margin-bottom: 20px;
+      color: #000;
+      font-weight: 700;
+    }
+    .incontroll.focus{
+      background-color: #e05514;
+      color: #FFF;
+      font-weight: 700;
+    }
+  }
+}

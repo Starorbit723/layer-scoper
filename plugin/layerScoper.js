@@ -1176,7 +1176,7 @@ export function LayerScoper() {
     1. 新的层级在页面创建时就实例化好了但是并不想立刻展示并且落焦，后续手动打开，比如侧浮层或者弹框
     2. 手动触发的好处是能让业务层开发者明确知道自己在干什么
   */
-  this.addNewController = (params) => {
+  this.addNewLayer = (params) => {
     if (!isInitFinish) {
       return;
     }

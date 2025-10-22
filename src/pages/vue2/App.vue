@@ -5,7 +5,8 @@
       <span class="demo-header-title">Vue2 - 示例页面</span>
       <a class="demo-header-back" href="../index.html">返回目录</a>
     </div>
-    <div id="content" class="content-wrapper clearfix">
+    <!-- 页面主体内容区域 -->
+    <div id="content" class="page-content-wrapper clearfix">
       <div class="map-incontroll-scroll">
         <!--同步的数据列表 1-->
         <div class="demo-list clearfix">
@@ -15,6 +16,7 @@
               v-for="item1 in demoDataList1" :key="item1.id"
               class="incontroll demo-list-item"
               :binddata="JSON.stringify(item1)"
+              :clickfocus="'openDialog'"
               >
               <div class="demo-list-item-title">{{item1.title}}</div>
               <div class="demo-list-item-description">{{item1.description}}</div>
@@ -45,7 +47,11 @@
         <div class="demo-list clearfix">
           <div class="demo-list-title">同步的数据列表 - className: transit (内部穿行)， 可在同一个scope内部上下移动焦点</div>
           <div class="demo-list-content clearfix scoped transit" data-scoped="4">
-            <div v-for="item4 in demoDataList4" :key="item4.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item4)">
+            <div v-for="item4 in demoDataList4"
+              :key="item4.id"
+              class="incontroll demo-list-item"
+              :binddata="JSON.stringify(item4)"
+              :clickfocus="'openAsideContent'">
               <div class="demo-list-item-title">{{item4.title}}</div>
               <div class="demo-list-item-description">{{item4.description}}</div>
             </div>
@@ -77,12 +83,27 @@
         <div class="clearfix"></div>
       </div>
     </div>
-    
+    <!-- 弹框 dialog -->
+    <div id="dialog-content" class="demo-dialog-wrapper" v-if="showDialog">
+      <div class="demo-dialog-content">
+        <div class="demo-dialog-title">弹框标题</div>
+          <div class="demo-dialog-body">弹框是一个新的图层(Layer), 可以独立于主页面进行交互<br>焦点会从 id = "content" 中脱离<br>并进入弹框图层 id = "dialog-content" 中</div>
+        <div class="demo-dialog-footer scoped" data-scoped="1">
+          <div class="incontroll demo-dialog-footer-button" :clickfocus="'closeDialog'">关闭弹框</div>
+          <div class="incontroll demo-dialog-footer-button" :clickfocus="'closeDialog'">我知道了</div>
+        </div>
+      </div>
+    </div>
+    <!-- 侧浮层 -->
+    <AsideContent
+      v-if="showAsideContent"
+      :LayerScoperCase="LayerScoperCase"
+      :closeAsideContentPropIn="closeAsideByMainContent"></AsideContent>
   </div>
 </template>
 
 <script>
-// import VueCounter from '@/components/vue2/Counter.vue';
+import AsideContent from '@/components/vue2/AsideContent.vue';
 import logo from '@/assets/images/logo-page.png';
 // import LayerScoper from 'layer-scoper';
 import { LayerScoper } from '../../../plugin/layerScoper';
@@ -91,15 +112,16 @@ const LayerScoperCase = new LayerScoper();
 
 export default {
   name: "APP",
-  // components: { VueCounter },
+  components: { AsideContent },
   data() {
     return {
+      LayerScoperCase,
       logo,
       demoDataList1: [
-        { id: 1, title: 'Item-1-1', description: ''},
-        { id: 2, title: 'Item-1-2', description: ''},
-        { id: 3, title: 'Item-1-3', description: ''},
-        { id: 4, title: 'Item-1-4', description: ''},
+        { id: 1, title: 'Item-1-1', description: '点击打开弹框-Dialog'},
+        { id: 2, title: 'Item-1-2', description: '点击打开弹框-Dialog'},
+        { id: 3, title: 'Item-1-3', description: '点击打开弹框-Dialog'},
+        { id: 4, title: 'Item-1-4', description: '点击打开弹框-Dialog'},
       ],
       demoDataList2: [
         { id: 1, title: 'Item-2-1', description: '按左键可至上一个scope'},
@@ -114,16 +136,16 @@ export default {
         { id: 4, title: 'Item-3-4', description: ''},
       ],
       demoDataList4: [
-        { id: 1, title: 'Item-4-1', description: ''},
-        { id: 2, title: 'Item-4-2', description: ''},
-        { id: 3, title: 'Item-4-3', description: ''},
-        { id: 4, title: 'Item-4-4', description: ''},
-        { id: 5, title: 'Item-4-5', description: ''},
-        { id: 6, title: 'Item-4-6', description: ''},
-        { id: 7, title: 'Item-4-7', description: ''},
-        { id: 8, title: 'Item-4-8', description: ''},
-        { id: 9, title: 'Item-4-9', description: ''},
-        { id: 10, title: 'Item-4-10', description: ''},
+        { id: 1, title: 'Item-4-1', description: '点击打开侧浮层组件'},
+        { id: 2, title: 'Item-4-2', description: '点击打开侧浮层组件'},
+        { id: 3, title: 'Item-4-3', description: '点击打开侧浮层组件'},
+        { id: 4, title: 'Item-4-4', description: '点击打开侧浮层组件'},
+        { id: 5, title: 'Item-4-5', description: '点击打开侧浮层组件'},
+        { id: 6, title: 'Item-4-6', description: '点击打开侧浮层组件'},
+        { id: 7, title: 'Item-4-7', description: '点击打开侧浮层组件'},
+        { id: 8, title: 'Item-4-8', description: '点击打开侧浮层组件'},
+        { id: 9, title: 'Item-4-9', description: '点击打开侧浮层组件'},
+        { id: 10, title: 'Item-4-10', description: '点击打开侧浮层组件'},
       ],
       demoDataList5: [
         { id: 1, title: 'Item-5-1', description: ''},
@@ -138,6 +160,8 @@ export default {
         { id: 10, title: 'Item-5-10', description: ''}
       ],
       demoDataList6: [],
+      showDialog: false, // 是否显示弹框
+      showAsideContent: false, // 是否显示侧浮层
     };
   },
   computed: {
@@ -173,6 +197,11 @@ export default {
         cbBackSpace: this.onBackSpaceClick,
         cbFocusChange: this.onFocusChange,
       },
+      // 用户自定义的回调方法
+      selfDefinedCallBackFn: {
+        openDialog: this.openDialog,
+        openAsideContent: this.openAsideContent,
+      },
     });
     // 模拟异步数据
     setTimeout(() => {
@@ -195,6 +224,7 @@ export default {
         });
       });
     }, 1000);
+    // 初始化弹框
   },
   methods: {
     onFocusUp(data) {
@@ -215,12 +245,63 @@ export default {
     onFocusChange(data) {
       console.warn('onFocusChange', data);
     },
+    // 打开弹框的回调方法
+    openDialog(data) {
+      console.warn('openDialog', data);
+      // 显示弹框
+      this.showDialog = true;
+      /*
+        添加一个弹框层级 - addNewLayer
+        该方法只需要调用一次，但要是确保DOM已经渲染完成后再调用
+        否则无法获取到正确的DOM元素
+      */
+      this.$nextTick(() => {
+        LayerScoperCase.addNewLayer({
+          id: 'dialog-content',
+          className: 'incontroll',
+          defaultPoint: { y: 1, x: 2 },
+          selfDefinedCallBackFn: {
+            closeDialog: this.onCloseDialog,
+          },
+        });
+        // 唤醒弹框层级
+        LayerScoperCase.wakeUp({
+          id: 'dialog-content',
+        });
+      });
+    },
+    // 关闭弹框的回调方法
+    onCloseDialog(data) {
+      console.warn('onCloseDialog', data);
+      // 关闭弹框
+      this.showDialog = false;
+      // 唤醒主页面层级
+      LayerScoperCase.wakeUp({
+        id: 'content',
+      });
+    },
+    // 打开侧浮层的回调方法
+    openAsideContent() {
+      console.warn('openAsideContent');
+      // 显示侧浮层
+      this.showAsideContent = true;
+    },
+    // 关闭侧浮层的回调方法
+    closeAsideByMainContent() {
+      console.warn('closeAsideByMainContent call');
+      // 关闭侧浮层
+      this.showAsideContent = false;
+      // 唤醒主页面层级
+      LayerScoperCase.wakeUp({
+        id: 'content',
+      });
+    },
   },
 };
 </script>
 
 <style lang="less" scoped>
-.content-wrapper {
+.page-content-wrapper {
   width: 100%;
   height: calc(100vh - 50px);
   .map-incontroll-scroll{
