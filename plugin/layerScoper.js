@@ -1,13 +1,6 @@
 /**
  * 位移焦点控制器
 */
-let Scrren_Multipler = 0;
-if (window.innerWidth === 1280) {
-  Scrren_Multipler = 0.666667;
-} else {
-  Scrren_Multipler = window.innerWidth / 1920;
-}
-
 export function LogPrint() {
   this.info = (text) => {
     console.log(`[layerscoper-info]: ${text}`);
@@ -20,6 +13,23 @@ export function LogPrint() {
   };
 }
 const Loger = new LogPrint();
+
+/*  
+  页面启动缩放单位换算
+  如果是 px 为单位的，则直接使用实际 px 数值
+  如果是 rem 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 em 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 vw 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 vh 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 vm 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 vmin 为单位的，则需要根据实际屏幕宽度计算倍率
+  如果是 vmax 为单位的，则需要根据实际屏幕宽度计算倍率
+*/
+let ScrrenMultipler = 1;
+
+export function setScreenMultiplier(value) {
+  ScrrenMultipler = value;
+}
 
 
 /**
@@ -342,8 +352,8 @@ export function LayerScoper() {
         正数：获焦元素位于滚动区中心下面，需要向上滚
         负数：获焦元素位于滚动区中心上面，需要向下滚
       */
-      const cha = relativeFather.focusCenterToFatherTop - (_currentScoped.outerHeight * 0.5 * Scrren_Multipler);
-      const scrollVal = ((outerDom.scrollTop * Scrren_Multipler) + cha) / Scrren_Multipler;
+      const cha = relativeFather.focusCenterToFatherTop - (_currentScoped.outerHeight * 0.5 * ScrrenMultipler);
+      const scrollVal = ((outerDom.scrollTop * ScrrenMultipler) + cha) / ScrrenMultipler;
       outerDom.scrollTo(0, scrollVal);
     }
 
@@ -355,8 +365,8 @@ export function LayerScoper() {
         正数：获焦元素位于滚动区中心右面，需要向左滚
         负数：获焦元素位于滚动区中心左面，需要向右滚
       */
-      const cha = relativeFather.focusCenterToFatherLeft - (_currentScoped.outerWidth * 0.5 * Scrren_Multipler);
-      const scrollVal = ((outerDom.scrollLeft * Scrren_Multipler) + cha) / Scrren_Multipler;
+      const cha = relativeFather.focusCenterToFatherLeft - (_currentScoped.outerWidth * 0.5 * ScrrenMultipler);
+      const scrollVal = ((outerDom.scrollLeft * ScrrenMultipler) + cha) / ScrrenMultipler;
       outerDom.scrollTo(scrollVal, 0);
     }
   };
@@ -377,6 +387,9 @@ export function LayerScoper() {
     }
     const outerDom = document.getElementById(_id);
     const innerDom = outerDom.querySelector(':scope > .map-incontroll-scroll');
+    console.warn('scrollData:', currentMap.scrollData);
+    console.warn('outerDom:', outerDom);
+    console.warn('innerDom:', innerDom);
     currentMap.scrollData.outerWidth = outerDom.offsetWidth;
     currentMap.scrollData.outerHeight = outerDom.offsetHeight;
     currentMap.scrollData.innerWidth = innerDom.clientWidth;
@@ -387,7 +400,7 @@ export function LayerScoper() {
       focusCenterToFatherTop: focusDom.getBoundingClientRect().top - outerDom.getBoundingClientRect().top + (0.5 * focusDom.getBoundingClientRect().height),
       focusCenterToFatherLeft: focusDom.getBoundingClientRect().left - outerDom.getBoundingClientRect().left + (0.5 * focusDom.getBoundingClientRect().width),
     };
-
+    console.warn('top:', relativeFather.focusCenterToFatherTop, 'left:', relativeFather.focusCenterToFatherLeft);
     // 竖向滚动，判断内层高度要大于外层高度
     if (currentMap.scrollDirection === 'vertical' && (currentMap.scrollData.innerHeight > currentMap.scrollData.outerHeight)) {
       /*
@@ -395,8 +408,12 @@ export function LayerScoper() {
         正数：获焦元素位于滚动区中心下面，需要向上滚
         负数：获焦元素位于滚动区中心上面，需要向下滚
       */
-      const cha = relativeFather.focusCenterToFatherTop - (currentMap.scrollData.outerHeight * 0.5 * Scrren_Multipler);
-      const scrollVal = ((outerDom.scrollTop * Scrren_Multipler) + cha) / Scrren_Multipler;
+      const cha = relativeFather.focusCenterToFatherTop - (currentMap.scrollData.outerHeight * 0.5 * ScrrenMultipler);
+      console.warn('cha:', cha);
+      console.warn('outerDom.scrollTop:', outerDom.scrollTop);
+      console.warn('ScrrenMultipler:', ScrrenMultipler);
+      const scrollVal = ((outerDom.scrollTop * ScrrenMultipler) + cha) / ScrrenMultipler;
+      console.warn('scrollVal:', scrollVal);
       setTimeout(() => {
         outerDom.scrollTo(0, scrollVal);
       }, 10);
@@ -410,8 +427,8 @@ export function LayerScoper() {
         正数：获焦元素位于滚动区中心右面，需要向左滚
         负数：获焦元素位于滚动区中心左面，需要向右滚
       */
-      const cha = relativeFather.focusCenterToFatherLeft - (currentMap.scrollData.outerWidth * 0.5 * Scrren_Multipler);
-      const scrollVal = ((outerDom.scrollLeft * Scrren_Multipler) + cha) / Scrren_Multipler;
+      const cha = relativeFather.focusCenterToFatherLeft - (currentMap.scrollData.outerWidth * 0.5 * ScrrenMultipler);
+      const scrollVal = ((outerDom.scrollLeft * ScrrenMultipler) + cha) / ScrrenMultipler;
       setTimeout(() => {
         outerDom.scrollTo(scrollVal, 0);
       }, 10);
@@ -888,13 +905,27 @@ export function LayerScoper() {
     keyEventInstalled = true;
     // 兼容键盘事件
     window.addEventListener('keydown', (e) => {
-      if ((e.keyCode === KeyBoard_KeyCode.UP) || (e.keyCode === RemoteControl_KeyCode.UP)) window.onKeyUp();
-      if ((e.keyCode === KeyBoard_KeyCode.DOWN) || (e.keyCode === RemoteControl_KeyCode.DOWN)) window.onKeyDown();
-      if ((e.keyCode === KeyBoard_KeyCode.RIGHT) || (e.keyCode === RemoteControl_KeyCode.RIGHT)) window.onKeyRight();
-      if ((e.keyCode === KeyBoard_KeyCode.LEFT) || (e.keyCode === RemoteControl_KeyCode.LEFT)) window.onKeyLeft();
-      if ((e.keyCode === KeyBoard_KeyCode.ENTER) || (e.keyCode === RemoteControl_KeyCode.ENTER)) window.onKeyEnter();
-      if ((e.keyCode === KeyBoard_KeyCode.BACKSPACE) || (e.keyCode === RemoteControl_KeyCode.BACKSPACE)) window.onDismissDialog();
-      if ((e.keyCode === KeyBoard_KeyCode.END) || (e.keyCode === KeyBoard_KeyCode.ESC)) window.onDismissDialog();
+      const code = e.keyCode;
+      // 屏蔽浏览器默认滚动/导航等行为，确保只由 LayerScoper 接管
+      if (
+        code === KeyBoard_KeyCode.UP || code === RemoteControl_KeyCode.UP ||
+        code === KeyBoard_KeyCode.DOWN || code === RemoteControl_KeyCode.DOWN ||
+        code === KeyBoard_KeyCode.LEFT || code === RemoteControl_KeyCode.LEFT ||
+        code === KeyBoard_KeyCode.RIGHT || code === RemoteControl_KeyCode.RIGHT ||
+        code === KeyBoard_KeyCode.ENTER || code === RemoteControl_KeyCode.ENTER ||
+        code === KeyBoard_KeyCode.BACKSPACE || code === RemoteControl_KeyCode.BACKSPACE ||
+        code === KeyBoard_KeyCode.END || code === KeyBoard_KeyCode.ESC
+      ) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+      }
+      if ((code === KeyBoard_KeyCode.UP) || (code === RemoteControl_KeyCode.UP)) window.onKeyUp();
+      if ((code === KeyBoard_KeyCode.DOWN) || (code === RemoteControl_KeyCode.DOWN)) window.onKeyDown();
+      if ((code === KeyBoard_KeyCode.RIGHT) || (code === RemoteControl_KeyCode.RIGHT)) window.onKeyRight();
+      if ((code === KeyBoard_KeyCode.LEFT) || (code === RemoteControl_KeyCode.LEFT)) window.onKeyLeft();
+      if ((code === KeyBoard_KeyCode.ENTER) || (code === RemoteControl_KeyCode.ENTER)) window.onKeyEnter();
+      if ((code === KeyBoard_KeyCode.BACKSPACE) || (code === RemoteControl_KeyCode.BACKSPACE)) window.onDismissDialog();
+      if ((code === KeyBoard_KeyCode.END) || (code === KeyBoard_KeyCode.ESC)) window.onDismissDialog();
     });
   };
 
@@ -1091,6 +1122,14 @@ export function LayerScoper() {
     if (!params.id || !params.className || !params.defaultPoint.x || !params.defaultPoint.y) {
       Loger.error('initController: missing necessary init params');
       return;
+    }
+    // 如果需要使用缩放单位换算，则设置倍率
+    if (params?.cssUsedScrrenMultipler && params?.screenMultiplerValue) {
+      if (typeof params?.screenMultiplerValue !== 'number' || !Number.isFinite(params?.screenMultiplerValue) || params?.screenMultiplerValue <= 0) {
+        Loger.error('if cssUsedScrrenMultipler = true , setScreenMultiplier expects a number/float value > 0');
+        return;
+      }
+      setScreenMultiplier(params?.screenMultiplerValue);
     }
     // 如果需要滚动 scrollDirection: horizontal / vertical
     if (params?.needScroll && !(params?.scrollDirection === 'horizontal' || params?.scrollDirection === 'vertical')) {

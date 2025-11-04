@@ -170,6 +170,12 @@ export default {
     
   },
   mounted() {
+    // let screenMultiplerValue = 1;
+    // if (window.innerWidth === 1280) {
+    //   screenMultiplerValue = 0.666667;
+    // } else {
+    //   screenMultiplerValue = window.innerWidth / 1920;
+    // }
     // 初始化LayerScoper
     LayerScoperCase.initController({
       id: 'content',
@@ -177,6 +183,8 @@ export default {
       defaultPoint: { x: 1, y: 1 },
       needScroll: true,
       scrollDirection: 'vertical', // horizontal vertical
+      // cssUsedScrrenMultipler: true,
+      // screenMultiplerValue: screenMultiplerValue,
       scrollBarConfig: {
         showScrollBar: true,
         trackWidth: '8px',
