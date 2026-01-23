@@ -71,6 +71,9 @@ export default {
         id: 'aside-content',
         className: 'incontroll',
         defaultPoint: { y: 1, x: 1 },
+        callBackFn:{
+          cbBackSpace: this.onCloseAsideContent,
+        },
         // 用户自定义的回调方法
         selfDefinedCallBackFn: {
           closeAsideContent: this.onCloseAsideContent,
