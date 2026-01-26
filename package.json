@@ -1,6 +1,6 @@
 {
   "name": "layer-scoper",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A front-end focus movement framework that supports keyboard/remote control/mouse simultaneously",
   "main": "index.js",
   "module": "index.js",
