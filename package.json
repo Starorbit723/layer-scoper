@@ -1,6 +1,6 @@
 {
   "name": "layer-scoper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A front-end focus movement framework that supports keyboard/remote control/mouse simultaneously",
   "main": "index.js",
   "module": "index.js",
@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/Starorbit723/layer-scoper#readme",
   "dependencies": {
-    "layer-scoper": "^1.0.1",
+    "layer-scoper": "^1.0.2",
     "preact": "^10.23.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
