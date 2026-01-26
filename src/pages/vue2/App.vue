@@ -74,7 +74,7 @@
         <div class="demo-list clearfix" v-if="demoDataList6.length > 0">
           <div class="demo-list-title">异步的数据列表</div>
           <div class="demo-list-content clearfix scoped" data-scoped="6">
-            <div v-for="item6 in demoDataList5" :key="item6.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item6)">
+            <div v-for="item6 in demoDataList6" :key="item6.id" class="incontroll demo-list-item" :binddata="JSON.stringify(item6)">
               <div class="demo-list-item-title">{{item6.title}}</div>
               <div class="demo-list-item-description">{{item6.description}}</div>
             </div>
@@ -116,7 +116,7 @@ export default {
   data() {
     return {
       LayerScoperCase,
-      logo,
+      logo, 
       demoDataList1: [
         { id: 1, title: 'Item-1-1', description: '点击打开弹框-Dialog'},
         { id: 2, title: 'Item-1-2', description: '点击打开弹框-Dialog'},
@@ -220,6 +220,10 @@ export default {
         { id: 4, title: 'Item-6-4', description: ''},
         { id: 5, title: 'Item-6-5', description: ''},
         { id: 6, title: 'Item-6-6', description: ''},
+        { id: 7, title: 'Item-6-7', description: ''},
+        { id: 8, title: 'Item-6-8', description: ''},
+        { id: 9, title: 'Item-6-9', description: ''},
+        { id: 10, title: 'Item-6-10', description: ''},
       ];
       /*
         这里要注意：当数据异步更新后，需要等DOM渲染完成后再调用update方法
@@ -310,13 +314,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.page-content-wrapper {
-  width: 100%;
-  height: calc(100vh - 50px);
-  .map-incontroll-scroll{
-
-  }
-}
 
 </style>
 

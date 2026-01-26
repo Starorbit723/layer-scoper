@@ -372,6 +372,166 @@ export function LayerScoper() {
   };
 
   /*
+    为 scoped-incontroll-scroll 元素初始化拖拽滚动功能
+    支持鼠标和触摸拖拽
+  */
+  this.initDragScroll = (containerId) => {
+    if (!containerId) {
+      Loger.warn('initDragScroll: containerId is required');
+      return;
+    }
+    const container = document.getElementById(containerId);
+    if (!container) {
+      Loger.warn(`initDragScroll: container with id "${containerId}" not found`);
+      return;
+    }
+
+    // 查找所有 scoped-incontroll-scroll 元素
+    const scrollElements = container.querySelectorAll('.scoped-incontroll-scroll');
+    
+    scrollElements.forEach((innerElement) => {
+      // 找到父级 scrollzone 容器
+      const outerElement = innerElement.closest('.scrollzone');
+      if (!outerElement) {
+        return;
+      }
+
+      // 检查是否已经初始化过（通过 data 属性标记）
+      if (outerElement.dataset.dragScrollInitialized === 'true') {
+        return;
+      }
+
+      let isDragging = false;
+      let hasMoved = false;
+      let startX = 0;
+      let startY = 0;
+      let scrollLeft = 0;
+      let scrollTop = 0;
+      const DRAG_THRESHOLD = 5; // 拖拽阈值，超过这个距离才认为是拖拽
+
+      // 鼠标事件处理
+      const handleMouseDown = (e) => {
+        // 如果点击的是按钮或链接，不处理拖拽
+        const target = e.target;
+        if (target.closest('button, a')) {
+          return;
+        }
+        
+        isDragging = true;
+        hasMoved = false;
+        startX = e.pageX - outerElement.offsetLeft;
+        startY = e.pageY - outerElement.offsetTop;
+        scrollLeft = outerElement.scrollLeft;
+        scrollTop = outerElement.scrollTop;
+      };
+
+      const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        
+        const x = e.pageX - outerElement.offsetLeft;
+        const y = e.pageY - outerElement.offsetTop;
+        const walkX = (x - startX);
+        const walkY = (y - startY);
+        const distance = Math.sqrt(walkX * walkX + walkY * walkY);
+        
+        // 只有移动距离超过阈值时才认为是拖拽
+        if (distance > DRAG_THRESHOLD) {
+          if (!hasMoved) {
+            hasMoved = true;
+            outerElement.style.userSelect = 'none';
+          }
+          e.preventDefault();
+          outerElement.scrollLeft = scrollLeft - walkX;
+          outerElement.scrollTop = scrollTop - walkY;
+        }
+      };
+
+      const handleMouseUp = (e) => {
+        if (isDragging && hasMoved) {
+          // 如果发生了拖拽，阻止点击事件
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        isDragging = false;
+        hasMoved = false;
+        outerElement.style.userSelect = '';
+      };
+
+      const handleMouseLeave = (e) => {
+        if (isDragging && hasMoved) {
+          // 如果发生了拖拽，阻止点击事件
+          e.preventDefault();
+        }
+        isDragging = false;
+        hasMoved = false;
+        outerElement.style.userSelect = '';
+      };
+
+      // 触摸事件处理
+      let touchHasMoved = false;
+      const handleTouchStart = (e) => {
+        if (e.touches.length !== 1) return;
+        // 如果触摸的是按钮或链接，不处理拖拽
+        const target = e.target;
+        if (target.closest('button, a')) {
+          return;
+        }
+        
+        isDragging = true;
+        touchHasMoved = false;
+        startX = e.touches[0].pageX - outerElement.offsetLeft;
+        startY = e.touches[0].pageY - outerElement.offsetTop;
+        scrollLeft = outerElement.scrollLeft;
+        scrollTop = outerElement.scrollTop;
+      };
+
+      const handleTouchMove = (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        
+        const x = e.touches[0].pageX - outerElement.offsetLeft;
+        const y = e.touches[0].pageY - outerElement.offsetTop;
+        const walkX = (x - startX);
+        const walkY = (y - startY);
+        const distance = Math.sqrt(walkX * walkX + walkY * walkY);
+        
+        // 只有移动距离超过阈值时才认为是拖拽
+        if (distance > DRAG_THRESHOLD) {
+          touchHasMoved = true;
+          e.preventDefault();
+          outerElement.scrollLeft = scrollLeft - walkX;
+          outerElement.scrollTop = scrollTop - walkY;
+        }
+      };
+
+      const handleTouchEnd = (e) => {
+        if (isDragging && touchHasMoved) {
+          // 如果发生了拖拽，阻止点击事件
+          e.preventDefault();
+        }
+        isDragging = false;
+        touchHasMoved = false;
+      };
+
+      // 添加鼠标事件监听器
+      outerElement.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      outerElement.addEventListener('mouseleave', handleMouseLeave);
+
+      // 添加触摸事件监听器
+      outerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+      outerElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+      outerElement.addEventListener('touchend', handleTouchEnd);
+      outerElement.addEventListener('touchcancel', handleTouchEnd);
+
+      // 标记为已初始化
+      outerElement.dataset.dragScrollInitialized = 'true';
+
+      Loger.info(`initDragScroll: drag scroll initialized for element in container "${containerId}"`);
+    });
+  };
+
+  /*
     改变当前焦点触发页面滚动 map-incontroll-scroll
   */
   this.currentMapScroll = () => {
@@ -1044,7 +1204,7 @@ export function LayerScoper() {
     _scopedList.forEach((ele) => {
       // 初始化或者添加新层级的时候，为了渲染性能，如果scoped里面的DOM为空，就不创建该位置以及标识记录数组，但是update方法会创建标识记录数组
       if (ele.querySelectorAll('.incontroll').length > 0) {
-      // if (ele.childNodes.length > 0) {
+        // if (ele.childNodes.length > 0) {
         controllerMaps[controllerIds[creatIndex]].domList.push([]);
         controllerMaps[controllerIds[creatIndex]].stepList.push(parseFloat(ele.attributes["data-scoped"].value));
         // 可在同一个scope内部上下移动焦点
@@ -1115,7 +1275,20 @@ export function LayerScoper() {
     初始化实例
   */
   this.initController = (params) => {
-    Loger.info(`initController: params = ${JSON.stringify(params)}`);
+    // 安全序列化 params，避免循环引用（回调函数包含 React Fiber 节点）
+    const safeParams = {
+      id: params.id,
+      className: params.className,
+      defaultPoint: params.defaultPoint,
+      needScroll: params.needScroll,
+      scrollDirection: params.scrollDirection,
+      cssUsedScrrenMultipler: params.cssUsedScrrenMultipler,
+      screenMultiplerValue: params.screenMultiplerValue,
+      scrollBarConfig: params.scrollBarConfig,
+      openAnimate: params.openAnimate,
+      // 不序列化 callBackFn 和 selfDefinedCallBackFn，因为它们包含函数引用
+    };
+    Loger.info(`initController: params = ${JSON.stringify(safeParams)}`);
     if (isInitFinish) {
       return;
     }
@@ -1204,10 +1377,28 @@ export function LayerScoper() {
     // 初始化按键
     this.keyEventInstall();
 
+    // 初始化拖拽滚动功能
+    this.initDragScroll(params.id);
+
     // 初始化完成
     isInitFinish = true;
 
-    Loger.info(`initController init finish  ${JSON.stringify(controllerMaps[controllerIds[wakeUpIndex]])}`);
+    // 安全序列化，避免循环引用（回调函数包含 React Fiber 节点）
+    const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+    const safeMap = {
+      stepList: currentMap.stepList,
+      transitList: currentMap.transitList,
+      recordList: currentMap.recordList,
+      openBoundaryList: currentMap.openBoundaryList,
+      scrollzoneList: currentMap.scrollzoneList,
+      lastY: currentMap.lastY,
+      lastX: currentMap.lastX,
+      currentY: currentMap.currentY,
+      currentX: currentMap.currentX,
+      needScroll: currentMap.needScroll,
+      scrollDirection: currentMap.scrollDirection,
+    };
+    Loger.info(`initController init finish  ${JSON.stringify(safeMap)}`);
   };
 
   /*
@@ -1224,6 +1415,8 @@ export function LayerScoper() {
       return;
     }
     this.addNewLevelData(params);
+    // 初始化拖拽滚动功能
+    this.initDragScroll(params.id);
   };
 
   /*
@@ -1358,6 +1551,8 @@ export function LayerScoper() {
           runCallbackFn({ currentMap: controllerMaps[id], direct: 'system', isBoundary: false });
         }
       }
+      // 初始化拖拽滚动功能（如果更新了包含 scrollzone 的区块）
+      this.initDragScroll(id);
     } else {
       Loger.warn(`updateData: don't init finished or ${id} is not exist`);
     }

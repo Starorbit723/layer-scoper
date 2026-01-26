@@ -16,7 +16,6 @@ img{
 a {
   color: #2563eb;
   text-decoration: none;
-  &:hover { cursor: pointer; }
 }
 button { cursor: pointer; }
 .clearfix{
@@ -46,6 +45,14 @@ button { cursor: pointer; }
     float: right;
     color: rgba(3, 189, 173, 1);
     font-weight: 700;
+  }
+}
+
+.page-content-wrapper {
+  width: 100%;
+  height: calc(100vh - 50px);
+  .map-incontroll-scroll{
+
   }
 }
 
@@ -92,8 +99,11 @@ button { cursor: pointer; }
     .incontroll.selected{
       border: 2px dashed #e05514;
     }
-    .incontroll:hover{
-      opacity: 0.6;
+    // 只在支持hover的设备上应用hover效果（避免触摸屏点击触发hover）
+    @media (hover: hover) and (pointer: fine) {
+      .incontroll:hover{
+        opacity: 0.6;
+      }
     }
   }
   .demo-list-scrollcontent{
@@ -131,8 +141,11 @@ button { cursor: pointer; }
       .incontroll.selected{
         border: 2px dashed #e05514;
       }
-      .incontroll:hover{
-        opacity:0.8;
+      // 只在支持hover的设备上应用hover效果（避免触摸屏点击触发hover）
+      @media (hover: hover) and (pointer: fine) {
+        .incontroll:hover{
+          opacity:0.8;
+        }
       }
     }
   }
@@ -236,8 +249,11 @@ button { cursor: pointer; }
       color: #FFF;
       font-weight: 700;
     }
-    .incontroll:hover{
-      opacity:0.8;
+    // 只在支持hover的设备上应用hover效果（避免触摸屏点击触发hover）
+    @media (hover: hover) and (pointer: fine) {
+      .incontroll:hover{
+        opacity:0.8;
+      }
     }
   }
 }

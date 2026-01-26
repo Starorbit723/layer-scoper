@@ -28,6 +28,38 @@ module.exports = {
   module: {
     rules: [
       { test: /\.vue$/, loader: 'vue-loader' },
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        include: [
+          path.resolve(__dirname, 'src/pages/react'),
+          path.resolve(__dirname, 'src/components/react')
+        ],
+        use: {
+          loader: require.resolve('babel-loader'),
+          options: {
+            babelrc: false,
+            presets: [
+              ['@babel/preset-env', { targets: { browsers: ['> 1%', 'last 2 versions'] } }],
+              ['@babel/preset-react', { runtime: 'automatic' }]
+            ]
+          }
+        }
+      },
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        include: [
+          path.resolve(__dirname, 'src/pages/preact'),
+          path.resolve(__dirname, 'src/components/preact')
+        ],
+        use: {
+          loader: require.resolve('babel-loader'),
+          options: {
+            babelrc: true
+          }
+        }
+      },
       { test: /\.css$/i, use: ['style-loader', 'css-loader'] },
       { test: /\.less$/i, use: ['style-loader', 'css-loader', 'less-loader'] },
       {
