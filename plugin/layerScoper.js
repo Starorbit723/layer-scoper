@@ -63,6 +63,12 @@ export const bounceVerticalAnimate = el => addAnimate({ el, animateClass: 'bounc
 export const bounceHorizonAnimate = el => addAnimate({ el, animateClass: 'bounce-horizoncls' });
 
 
+/**
+ * 将 .incontroll 元素上 binddata 属性（JSON 字符串）解析为业务数据对象
+ * 用于 addNewLevelData/update 时写入 dataList，以及回调中 dataSource 的兜底解析
+ * @param {string} [str] - JSON 字符串，通常来自 element.attributes.binddata?.value
+ * @returns {object|null} 解析后的对象；非对象、空或解析失败时返回 null
+ */
 export const backToData = (str) => {
     try {
         if (str) {
@@ -171,18 +177,20 @@ export const runCallbackFn = ({ currentMap, direct, isBoundary, domEle }) => {
     if (!currentMap?.callBackFn) {
         return;
     }
+    const _yIdx = currentMap?.stepList.indexOf(currentMap.currentY);
+    const _xIdx = currentMap.currentX - 1;
     const cbData = {
-        locationName: currentMap?.domList[currentMap?.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1].attributes?.locationname?.value || '',
+        locationName: currentMap?.domList[_yIdx]?.[_xIdx]?.attributes?.locationname?.value || '',
         currentY: currentMap.currentY,
         currentX: currentMap.currentX,
         lastY: currentMap.lastY,
         lastX: currentMap.lastX,
         isBoundary,
-        dataSource: backToData(currentMap?.domList[currentMap?.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1].attributes?.binddata?.value),
+        dataSource: currentMap?.dataList?.[_yIdx]?.[_xIdx] ?? null,
     };
 
     // 默认方式移动焦点时，添加回弹动画，如果走了手动方式，需要开发者手动触发动画或者不触发动画
-    if (isBoundary && domEle) {
+    if (isBoundary && domEle && (typeof domEle.isConnected === 'undefined' || domEle.isConnected)) {
         Loger.info(`bounce-${direct}`);
         if (direct === 'left' || direct === 'right') {
             bounceHorizonAnimate(domEle);
@@ -212,60 +220,137 @@ export const runCallbackFn = ({ currentMap, direct, isBoundary, domEle }) => {
     }
 };
 
+/**
+ * 校验 currentMap 的 currentY/currentX 是否在有效范围内，且对应 DOM 仍在文档中（避免异步重渲染后引用失效）
+ * @param {object} currentMap - controllerMaps[id]
+ * @returns {boolean}
+ */
+export const isFocusValid = (currentMap) => {
+    if (!currentMap?.domList?.length || !currentMap?.stepList?.length) return false;
+    const yIdx = currentMap.stepList.indexOf(currentMap.currentY);
+    if (yIdx === -1) return false;
+    const row = currentMap.domList[yIdx];
+    if (!row || !row.length) return false;
+    const xIdx = currentMap.currentX - 1;
+    if (xIdx < 0 || xIdx >= row.length) return false;
+    const node = row[xIdx];
+    return node && typeof node.isConnected === 'boolean' ? node.isConnected : true;
+};
+
+/**
+ * 当焦点无效时，矫正到第一个非空 scope 的第一个可聚焦项（用于 DOM 重渲染/异步列表后的恢复）
+ * @param {object} currentMap - controllerMaps[id]
+ * @returns {boolean} 是否成功矫正
+ */
+export const correctFocusToFirstValid = (currentMap) => {
+    if (!currentMap?.domList?.length || !currentMap?.stepList?.length) return false;
+    for (let i = 0; i < currentMap.domList.length; i += 1) {
+        const row = currentMap.domList[i];
+        if (!row?.length) {
+            // skip empty scope
+        } else {
+            for (let j = 0; j < row.length; j += 1) {
+                const node = row[j];
+                if (node && (typeof node.isConnected === 'undefined' || node.isConnected)) {
+                    currentMap.lastY = currentMap.currentY;
+                    currentMap.lastX = currentMap.currentX;
+                    currentMap.currentY = currentMap.stepList[i];
+                    currentMap.currentX = j + 1;
+                    Loger.info(`correctFocusToFirstValid: corrected to scope=${currentMap.currentY} x=${currentMap.currentX}`);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+};
+
 /*
     改变当前焦点CSS, 并触发焦点改变的默认回调
     currentMap： 当前激活的实例
     direct: 方向  left-左  right-右 up-上 down-下  click-鼠标点击  handler-手动指定 system-系统矫正
+    focusTargetNode: 可选，鼠标点击时传入被点击的 DOM 节点，避免 domList 未及时 update 时焦点落到错误节点
 */
-export const changeCurrentFocus = ({ currentMap, direct }) => {
+export const changeCurrentFocus = ({ currentMap, direct, focusTargetNode }) => {
+    if (!currentMap?.domList?.length || !currentMap?.stepList?.length) {
+        Loger.warn('changeCurrentFocus: currentMap has no domList/stepList');
+        return;
+    }
     const _searchYIndex = currentMap.stepList.indexOf(currentMap.currentY);
     const _lastSearchYIndex = currentMap.stepList.indexOf(currentMap.lastY);
+    const row = currentMap.domList[_searchYIndex];
+    const currentDom = row?.[currentMap.currentX - 1];
+    const currentValid = _searchYIndex !== -1 && row && currentMap.currentX >= 1 && currentMap.currentX <= row.length
+        && currentDom && (typeof currentDom.isConnected === 'undefined' || currentDom.isConnected);
+    if (!currentValid) {
+        if (correctFocusToFirstValid(currentMap)) {
+            changeCurrentFocus({ currentMap, direct: 'system' });
+        }
+        return;
+    }
+    const lastRow = currentMap.domList[_lastSearchYIndex];
+    const lastDom = _lastSearchYIndex !== -1 && lastRow && currentMap.lastX >= 1 && currentMap.lastX <= lastRow.length
+        ? lastRow[currentMap.lastX - 1] : null;
+    const lastValid = lastDom && (typeof lastDom.isConnected === 'undefined' || lastDom.isConnected);
     const isNeedRemember = currentMap.recordList.indexOf(currentMap.currentY) !== -1;
     Loger.info(`changeCurrentFocus isNeedRemember:${isNeedRemember} direct:${direct}`);
     // 如果带有remember的scoped,需要记录选中态,选中态是跟随着focus一起动的
     if (isNeedRemember) {
         currentMap.domList[_searchYIndex].forEach((ele, idx) => {
-            ele.classList.remove('selected');
-            if (idx === currentMap.currentX - 1) {
-                ele.classList.add('selected');
+            if (ele && (typeof ele.isConnected === 'undefined' || ele.isConnected)) {
+                ele.classList.remove('selected');
+                if (!focusTargetNode && idx === currentMap.currentX - 1) ele.classList.add('selected');
             }
         });
+        if (focusTargetNode && (typeof focusTargetNode.isConnected === 'undefined' || focusTargetNode.isConnected)) {
+            focusTargetNode.classList.add('selected');
+        } else if (row?.[currentMap.currentX - 1]) {
+            row[currentMap.currentX - 1].classList.add('selected');
+        }
         if (currentMap?.callBackFn?.cbScopeSelectedChange && typeof currentMap.callBackFn.cbScopeSelectedChange === 'function') {
-            const selectedEle = currentMap.domList[_searchYIndex][currentMap.currentX - 1];
+            const selectedEle = focusTargetNode || currentMap.domList[_searchYIndex]?.[currentMap.currentX - 1];
+            const selectedData = currentMap.dataList?.[_searchYIndex]?.[currentMap.currentX - 1] ?? null;
             currentMap.callBackFn.cbScopeSelectedChange({
                 id: currentMap.controllerId,
                 targetY: currentMap.currentY,
                 targetX: currentMap.currentX,
                 locationName: selectedEle?.attributes?.locationname?.value || '',
-                dataSource: backToData(selectedEle?.attributes?.binddata?.value),
+                dataSource: selectedData,
             });
         }
     }
     // 当某个已经落焦点所在的Scope DOM被重新渲染了,系统会矫正再重新找一个落焦点
-    if (direct === 'system' && currentMap.domList[_lastSearchYIndex].length > 0) {
+    if (direct === 'system' && _lastSearchYIndex !== -1 && currentMap.domList[_lastSearchYIndex]?.length > 0) {
         currentMap.domList[_lastSearchYIndex].forEach((ele) => {
-            ele.classList.remove('focus');
+            if (ele && (typeof ele.isConnected === 'undefined' || ele.isConnected)) ele.classList.remove('focus');
         });
     }
-    if ((currentMap.lastY !== -1 || currentMap.lastX !== -1) && direct !== 'system') {
-        const isLastNeedRemember = currentMap.domList[_lastSearchYIndex][0].parentNode.classList.value.indexOf('remembered') !== -1;
-        currentMap.domList[_lastSearchYIndex][currentMap.lastX - 1].classList.remove('focus');
-        // 选中态是跟随着focus一起移除，但是兼容鼠标点选，要清理所有，因为可能跨scoped点击
-        if (isLastNeedRemember && (_searchYIndex === _lastSearchYIndex)) {
-            currentMap.domList[_lastSearchYIndex][currentMap.lastX - 1].classList.remove('selected');
+    if (lastValid && (currentMap.lastY !== -1 || currentMap.lastX !== -1) && direct !== 'system') {
+        const lastRowRef = currentMap.domList[_lastSearchYIndex];
+        const isLastNeedRemember = lastRowRef?.[0]?.parentNode?.classList?.value?.indexOf('remembered') !== -1;
+        if (lastRowRef[currentMap.lastX - 1]) lastRowRef[currentMap.lastX - 1].classList.remove('focus');
+        if (isLastNeedRemember && _searchYIndex === _lastSearchYIndex && lastRowRef[currentMap.lastX - 1]) {
+            lastRowRef[currentMap.lastX - 1].classList.remove('selected');
         }
     }
-    // 添加新的焦点
-    currentMap.domList[_searchYIndex][currentMap.currentX - 1].classList.add('focus');
+    // 添加新的焦点（点击时优先用传入的 focusTargetNode，避免异步渲染后 domList 与真实 DOM 不一致）
+    const focusNode = focusTargetNode || currentMap.domList[_searchYIndex][currentMap.currentX - 1];
+    if (focusNode && (typeof focusNode.isConnected === 'undefined' || focusNode.isConnected)) {
+        focusNode.classList.add('focus');
+    }
     // 焦点有变化默认回调
     if (currentMap?.callBackFn?.cbFocusChange && (typeof currentMap?.callBackFn?.cbFocusChange === 'function')) {
+        const yIndex = currentMap?.stepList.indexOf(currentMap.currentY);
+        const xIndex = currentMap.currentX - 1;
+        const currentDom = focusTargetNode || currentMap?.domList?.[yIndex]?.[xIndex];
+        const currentData = currentMap?.dataList?.[yIndex]?.[xIndex] ?? null;
         const cbData = {
-            locationName: currentMap?.domList[currentMap?.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1].attributes?.locationname?.value || '',
+            locationName: currentDom?.attributes?.locationname?.value || '',
             currentY: currentMap.currentY,
             currentX: currentMap.currentX,
             lastY: currentMap.lastY,
             lastX: currentMap.lastX,
-            dataSource: backToData(currentMap?.domList[currentMap?.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1].attributes?.binddata?.value),
+            dataSource: currentData,
         };
         currentMap?.callBackFn?.cbFocusChange(cbData);
     }
@@ -274,59 +359,68 @@ export const changeCurrentFocus = ({ currentMap, direct }) => {
 export function LayerScoper() {
     let isInitFinish = false;
 
-    // 多实例ids
+    // 多实例 ids（当前 LayerScoper 实例内共享，多实例切换依赖 controllerIds + wakeUpIndex）
     const controllerIds = [];
 
     // 当前唤醒实例
     let wakeUpIndex = 0;
 
-    // 多实例存储
+    // update 防抖：同一 (id, needUpdateScoped) 在短时间内多次调用只执行最后一次，避免 DOM 未稳定时重复刷新
+    const updateDebounceTimers = {};
+    const UPDATE_DEBOUNCE_MS = 32;
+
+    // 多实例存储（同一 LayerScoper 实例内共享；多实例切换依赖 controllerIds + wakeUpIndex）
     const controllerMaps = {
         // content: {
-    //   domList: [],
-    //   stepList: [],
-    //   transitList: [],
-    //   recordList: [],
-    //   openBoundaryList: [],
-    //   scrollzoneList: [],
-    //   lastY: -1,
-    //   lastX: -1,
-    //   currentY: -1,
-    //   currentX: -1,
-    //   callBackFn: {},
-    //   selfDefinedCallBackFn: {},
-    //   needScroll: false,
-    //   scrollDirection: '',
-    //   scrollData: {
-    //     outerWidth: -1,
-    //     outerHeight: -1,
-    //     innerWidth: -1,
-    //     innerHeight: -1,
-    //   },
-    // },
-    // dialog-content: {
-    //   domList: [],
-    //   stepList: [],
-    //   transitList: [],
-    //   recordList: [],
-    //   openBoundaryList: [],
-    //   scrollzoneList: [],
-    //   lastY: -1,
-    //   lastX: -1,
-    //   currentY: -1,
-    //   currentX: -1,
-    //   callBackFn: {},
-    //   selfDefinedCallBackFn: {},
-    //   needScroll: false,
-    //   scrollDirection: '',
-    //   scrollData: {
-    //     outerWidth: -1,
-    //     outerHeight: -1,
-    //     innerWidth: -1,
-    //     innerHeight: -1,
-    //   },
+        //   domList: [],                  // domList[scopeIndex][xIndex] = DOM 节点
+        //   dataList: [],                 // dataList[scopeIndex][xIndex] = 业务数据（由 binddata 解析，避免频繁 JSON.parse）
+        //   stepList: [],                 // 所有 scope 的 Y 值（data-scoped）
+        //   transitList: [],
+        //   recordList: [],               // 带 remembered 的 scope 列表
+        //   openBoundaryList: [],
+        //   scrollzoneList: [],           // 带 scrollzone 的 scope 列表
+        //   lastY: -1,
+        //   lastX: -1,
+        //   currentY: -1,
+        //   currentX: -1,
+        //   controllerId: 'content',      // 当前 map 对应的 layer id
+        //   callBackFn: {},               // cbFocusChange / cbScrollzoneScroll / cbScopeSelectedChange 等
+        //   selfDefinedCallBackFn: {},    // clickfocus / gobackspace 等自定义回调
+        //   needScroll: false,            // 是否启用整页 map 滚动
+        //   scrollDirection: '',          // map 滚动方向 horizontal / vertical
+        //   scrollData: {                 // map 滚动时用到的尺寸缓存
+        //     outerWidth: -1,
+        //     outerHeight: -1,
+        //     innerWidth: -1,
+        //     innerHeight: -1,
+        //   },
+        //   programAutoScrollAction: null,// 程序性滚动时标记当前 scopeY，scroll 监听里用来忽略这次回调
         // },
-
+        // dialog-content: {
+        //   domList: [],
+        //   dataList: [],
+        //   stepList: [],
+        //   transitList: [],
+        //   recordList: [],
+        //   openBoundaryList: [],
+        //   scrollzoneList: [],
+        //   lastY: -1,
+        //   lastX: -1,
+        //   currentY: -1,
+        //   currentX: -1,
+        //   controllerId: 'dialog-content',
+        //   callBackFn: {},
+        //   selfDefinedCallBackFn: {},
+        //   needScroll: false,
+        //   scrollDirection: '',
+        //   scrollData: {
+        //     outerWidth: -1,
+        //     outerHeight: -1,
+        //     innerWidth: -1,
+        //     innerHeight: -1,
+        //   },
+        //   programAutoScrollAction: null,
+        // },
     };
 
     /*
@@ -353,8 +447,10 @@ export function LayerScoper() {
             innerWidth: innerDom.scrollWidth || innerDom.clientWidth,
             innerHeight: innerDom.scrollHeight || innerDom.clientHeight,
         };
-        const focusDom = currentMap.domList[currentMap.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1];
-        if (!focusDom) return;
+        const _yIdx = currentMap.stepList.indexOf(currentMap.currentY);
+        const _row = currentMap.domList[_yIdx];
+        const focusDom = _row?.[currentMap.currentX - 1];
+        if (!focusDom || (typeof focusDom.isConnected === 'boolean' && !focusDom.isConnected)) return;
         currentMap.programAutoScrollAction = currentMap.currentY;
         // focusDom几何中点相对于父级左边和顶部的距离，实际屏幕显示的真实距离值
         const relativeFather = {
@@ -549,7 +645,10 @@ export function LayerScoper() {
         currentMap.scrollData.outerHeight = outerDom.offsetHeight;
         currentMap.scrollData.innerWidth = innerDom.clientWidth;
         currentMap.scrollData.innerHeight = innerDom.clientHeight;
-        const focusDom = currentMap.domList[currentMap.stepList.indexOf(currentMap.currentY)][currentMap.currentX - 1];
+        const _yIdxScroll = currentMap.stepList.indexOf(currentMap.currentY);
+        const _rowScroll = currentMap.domList[_yIdxScroll];
+        const focusDom = _rowScroll?.[currentMap.currentX - 1];
+        if (!focusDom || (typeof focusDom.isConnected === 'boolean' && !focusDom.isConnected)) return;
         const relativeFather = {
             focusCenterToFatherTop: focusDom.getBoundingClientRect().top - outerDom.getBoundingClientRect().top + (0.5 * focusDom.getBoundingClientRect().height),
             focusCenterToFatherLeft: focusDom.getBoundingClientRect().left - outerDom.getBoundingClientRect().left + (0.5 * focusDom.getBoundingClientRect().width),
@@ -573,6 +672,15 @@ export function LayerScoper() {
 
     this.onFocusDown = () => {
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+        if (!currentMap) return;
+        if (!isFocusValid(currentMap)) {
+            if (correctFocusToFirstValid(currentMap)) {
+                changeCurrentFocus({ currentMap, direct: 'system' });
+                this.currentScopeScroll({ currentMap, direct: 'system' });
+                this.currentMapScroll();
+            }
+            return;
+        }
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.godown?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.godown?.value]) === 'function') {
             try {
@@ -582,7 +690,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             } catch (e) {
                 Loger.error(`godown error ${e}`);
@@ -598,6 +706,7 @@ export function LayerScoper() {
         const isTransit = currentMap.transitList.indexOf(currentMap.currentY) !== -1;
         if (isTransit) {
             currentMap.domList[_currentYIndex].forEach((ele, index) => {
+                if (!ele || (typeof ele.isConnected !== 'undefined' && !ele.isConnected)) return;
                 const _nearlyNextLine = twoPointDistanceSameScoped({
                     currentPoint: currentMap.domList[_currentYIndex][currentMap.currentX - 1],
                     nextEle: ele,
@@ -643,6 +752,7 @@ export function LayerScoper() {
         }
 
         currentMap.domList[_findNextIndex].forEach((ele, index) => {
+            if (!ele || (typeof ele.isConnected !== 'undefined' && !ele.isConnected)) return;
             if (ele.classList.value.indexOf('selected') !== -1) {
                 remembered = index;
             }
@@ -673,6 +783,15 @@ export function LayerScoper() {
 
     this.onFocusUp = () => {
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+        if (!currentMap) return;
+        if (!isFocusValid(currentMap)) {
+            if (correctFocusToFirstValid(currentMap)) {
+                changeCurrentFocus({ currentMap, direct: 'system' });
+                this.currentScopeScroll({ currentMap, direct: 'system' });
+                this.currentMapScroll();
+            }
+            return;
+        }
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goup?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goup?.value]) === 'function') {
             try {
@@ -682,7 +801,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             } catch (e) {
                 Loger.error(`goup error ${e}`);
@@ -698,6 +817,7 @@ export function LayerScoper() {
         const isTransit = currentMap.transitList.indexOf(currentMap.currentY) !== -1;
         if (isTransit) {
             currentMap.domList[_currentYIndex].forEach((ele, index) => {
+                if (!ele || (typeof ele.isConnected !== 'undefined' && !ele.isConnected)) return;
                 const _nearlyUpLine = twoPointDistanceSameScoped({
                     currentPoint: currentMap.domList[_currentYIndex][currentMap.currentX - 1],
                     nextEle: ele,
@@ -743,6 +863,7 @@ export function LayerScoper() {
         }
 
         currentMap.domList[_findNextIndex].forEach((ele, index) => {
+            if (!ele || (typeof ele.isConnected !== 'undefined' && !ele.isConnected)) return;
             if (ele.classList.value.indexOf('selected') !== -1) {
                 remembered = index;
             }
@@ -773,6 +894,15 @@ export function LayerScoper() {
 
     this.onFocusLeft = () => {
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+        if (!currentMap) return;
+        if (!isFocusValid(currentMap)) {
+            if (correctFocusToFirstValid(currentMap)) {
+                changeCurrentFocus({ currentMap, direct: 'system' });
+                this.currentScopeScroll({ currentMap, direct: 'system' });
+                this.currentMapScroll();
+            }
+            return;
+        }
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goleft?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goleft?.value]) === 'function') {
             try {
@@ -782,7 +912,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             } catch (e) {
                 Loger.error(`goleft error ${e}`);
@@ -832,6 +962,15 @@ export function LayerScoper() {
 
     this.onFocusRight = () => {
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+        if (!currentMap) return;
+        if (!isFocusValid(currentMap)) {
+            if (correctFocusToFirstValid(currentMap)) {
+                changeCurrentFocus({ currentMap, direct: 'system' });
+                this.currentScopeScroll({ currentMap, direct: 'system' });
+                this.currentMapScroll();
+            }
+            return;
+        }
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goright?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goright?.value]) === 'function') {
             try {
@@ -841,7 +980,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             } catch (e) {
                 Loger.error(`goright error ${e}`);
@@ -892,7 +1031,17 @@ export function LayerScoper() {
     this.onFocusKeyEnter = () => {
         try {
             const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+            if (!currentMap) return;
+            if (!isFocusValid(currentMap)) {
+                if (correctFocusToFirstValid(currentMap)) {
+                    changeCurrentFocus({ currentMap, direct: 'system' });
+                    this.currentScopeScroll({ currentMap, direct: 'system' });
+                    this.currentMapScroll();
+                }
+                return;
+            }
             const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
+            if (!_target[0]) return;
             if (_target[0]?.attributes?.clickfocus?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.clickfocus?.value]) === 'function') {
                 currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.clickfocus?.value]({
                     locationName: _target[0].attributes?.locationname?.value || '',
@@ -900,7 +1049,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             }
         } catch (e) {
@@ -921,7 +1070,7 @@ export function LayerScoper() {
                 currentMap.lastX = currentMap.currentX;
                 currentMap.currentY = parseFloat(_target.attributes?.y.value);
                 currentMap.currentX = parseFloat(_target.attributes?.x.value);
-                changeCurrentFocus({ currentMap, direct: 'click' });
+                changeCurrentFocus({ currentMap, direct: 'click', focusTargetNode: _target });
                 this.currentScopeScroll({ currentMap, direct: 'click' });
                 this.currentMapScroll();
             }
@@ -932,7 +1081,7 @@ export function LayerScoper() {
                     currentX: parseFloat(_target.attributes?.x.value),
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(parseFloat(_target?.attributes?.y?.value))]?.[parseFloat(_target?.attributes?.x?.value) - 1] ?? null,
                 });
             }
         } catch (e) {
@@ -942,7 +1091,17 @@ export function LayerScoper() {
 
     this.onBackSpace = () => {
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
+        if (!currentMap) return;
+        if (!isFocusValid(currentMap)) {
+            if (correctFocusToFirstValid(currentMap)) {
+                changeCurrentFocus({ currentMap, direct: 'system' });
+                this.currentScopeScroll({ currentMap, direct: 'system' });
+                this.currentMapScroll();
+            }
+            return;
+        }
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
+        if (!_target[0]) return;
         if (_target[0]?.attributes?.gobackspace?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.gobackspace?.value]) === 'function') {
             try {
                 currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.gobackspace?.value]({
@@ -951,7 +1110,7 @@ export function LayerScoper() {
                     currentX: currentMap.currentX,
                     lastY: currentMap.lastY,
                     lastX: currentMap.lastX,
-                    dataSource: backToData(_target[0]?.attributes?.binddata?.value),
+                    dataSource: currentMap?.dataList?.[currentMap.stepList.indexOf(currentMap.currentY)]?.[currentMap.currentX - 1] ?? null,
                 });
             } catch (e) {
                 Loger.error('gobackspace error');
@@ -1117,6 +1276,8 @@ export function LayerScoper() {
             throw e;
         }
         controllerMaps[controllerIds[creatIndex]].domList = [];
+        // 与 domList 结构一致，用于按 (scopeIndex, xIndex) 存放业务数据，避免频繁从 DOM 的 binddata 解析
+        controllerMaps[controllerIds[creatIndex]].dataList = [];
         controllerMaps[controllerIds[creatIndex]].stepList = [];
         controllerMaps[controllerIds[creatIndex]].transitList = [];
         controllerMaps[controllerIds[creatIndex]].recordList = [];
@@ -1126,6 +1287,7 @@ export function LayerScoper() {
         _scopedList.forEach((ele) => {
             if (ele.querySelectorAll('.incontroll').length > 0) {
                 controllerMaps[controllerIds[creatIndex]].domList.push([]);
+                controllerMaps[controllerIds[creatIndex]].dataList.push([]);
                 controllerMaps[controllerIds[creatIndex]].stepList.push(parseFloat(ele.attributes['data-scoped'].value));
                 if (ele.classList.value.indexOf('transit') !== -1) {
                     controllerMaps[controllerIds[creatIndex]].transitList.push(parseFloat(ele.attributes['data-scoped'].value));
@@ -1145,7 +1307,14 @@ export function LayerScoper() {
                     ele2.setAttribute('x', index2 + 1);
                     ele2.removeEventListener('click', this.onFocusMouseClick);
                     ele2.addEventListener('click', this.onFocusMouseClick);
-                    controllerMaps[controllerIds[creatIndex]].domList[controllerMaps[controllerIds[creatIndex]].domList.length - 1].push(ele2);
+                    const lastIndex = controllerMaps[controllerIds[creatIndex]].domList.length - 1;
+                    controllerMaps[controllerIds[creatIndex]].domList[lastIndex].push(ele2);
+                    // 初始化 dataList：只解析一次 binddata，后续从 dataList 读取，避免频繁 JSON.parse
+                    controllerMaps[controllerIds[creatIndex]].dataList[lastIndex].push(
+                        backToData(ele2.attributes?.binddata?.value),
+                    );
+                    // 业务数据已写入 dataList，可从真实 DOM 上移除 binddata 减少渲染负担
+                    ele2.removeAttribute('binddata');
                 });
             }
         });
@@ -1335,114 +1504,137 @@ export function LayerScoper() {
     };
 
     /*
-    更新某个实例层级下的数据
+    更新某个实例层级下的数据（带防抖，同一 scope 短时间多次调用只执行最后一次）
+    调用时机：必须在 DOM 已更新后调用——例如 setState/异步列表加载完成后、或 React 的 useEffect 依赖列表变化后。
+    若在数据已变更但 DOM 尚未渲染完成时调用，会采集到旧 DOM，导致 domList/dataList 与界面不一致。
+    列表异步渲染后务必先调用 update 再落焦（goToFocus/wakeUp），否则可能报错或焦点落到错误节点。
     id: 实例id
-    needUpdateScoped: 要更新的scoped区块
+    needUpdateScoped: 要更新的 scoped 区块
     */
-    this.update = ({ id, needUpdateScoped }) => {
+    const doUpdatePayload = (id, needUpdateScoped) => {
         Loger.info(`updateData: needUpdateScoped：${needUpdateScoped}`);
-        if (isInitFinish && controllerIds.indexOf(id) !== -1) {
-            const _scopedList = Array.prototype.slice.call(document.getElementById(id).getElementsByClassName('scoped'));
-            const updateIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
-            const _updateData = [];
-            let _matchScopedValue = false;
-            let _needRecord = false;
-            let _needTransit = false;
-            let _needOpenBoundary = false;
-            let _needScrollzone = false;
+        if (!isInitFinish || controllerIds.indexOf(id) === -1) {
+            Loger.warn(`updateData: don't init finished or ${id} is not exist`);
+            return;
+        }
+        const container = document.getElementById(id);
+        if (!container) {
+            Loger.warn(`updateData: container id=${id} not found`);
+            return;
+        }
+        const _scopedList = Array.prototype.slice.call(container.getElementsByClassName('scoped'));
+        const updateIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
+        const _updateDomList = [];
+        const _updateDataList = [];
+        let _matchScopedValue = false;
+        let _needRecord = false;
+        let _needTransit = false;
+        let _needOpenBoundary = false;
+        let _needScrollzone = false;
 
-            _scopedList.forEach((ele) => {
-                if (ele.attributes['data-scoped'].value === needUpdateScoped.toString()) {
-                    _matchScopedValue = true;
-                    if (ele.classList.value.indexOf('remembered') !== -1) {
-                        _needRecord = true;
-                    }
-                    if (ele.classList.value.indexOf('transit') !== -1) {
-                        _needTransit = true;
-                    }
-                    if (ele.classList.value.indexOf('openboundary') !== -1) {
-                        _needOpenBoundary = true;
-                    }
-                    if (ele.classList.value.indexOf('scrollzone') !== -1) {
-                        _needScrollzone = true;
-                    }
-                    if (ele.querySelectorAll('.incontroll').length > 0) {
-                        ele.querySelectorAll('.incontroll').forEach((ele2, index2) => {
-                            ele2.setAttribute('locationname', `ln_${needUpdateScoped.toString()}_${(index2 + 1).toString()}`);
-                            ele2.setAttribute('y', needUpdateScoped);
-                            ele2.setAttribute('x', index2 + 1);
-                            ele2.removeEventListener('click', this.onFocusMouseClick);
-                            ele2.addEventListener('click', this.onFocusMouseClick);
-                            _updateData.push(ele2);
-                        });
-                    }
+        _scopedList.forEach((ele) => {
+            if (ele.attributes['data-scoped'].value === needUpdateScoped.toString()) {
+                _matchScopedValue = true;
+                if (ele.classList.value.indexOf('remembered') !== -1) _needRecord = true;
+                if (ele.classList.value.indexOf('transit') !== -1) _needTransit = true;
+                if (ele.classList.value.indexOf('openboundary') !== -1) _needOpenBoundary = true;
+                if (ele.classList.value.indexOf('scrollzone') !== -1) _needScrollzone = true;
+                if (ele.querySelectorAll('.incontroll').length > 0) {
+                    ele.querySelectorAll('.incontroll').forEach((ele2, index2) => {
+                        ele2.setAttribute('locationname', `ln_${needUpdateScoped.toString()}_${(index2 + 1).toString()}`);
+                        ele2.setAttribute('y', needUpdateScoped);
+                        ele2.setAttribute('x', index2 + 1);
+                        ele2.removeEventListener('click', this.onFocusMouseClick);
+                        ele2.addEventListener('click', this.onFocusMouseClick);
+                        _updateDomList.push(ele2);
+                        _updateDataList.push(backToData(ele2.attributes?.binddata?.value));
+                        ele2.removeAttribute('binddata');
+                    });
                 }
-            });
+            }
+        });
 
-            if (_matchScopedValue === false) {
-                Loger.error(`update dont find this dom level point id ${id} needUpdateScoped ${needUpdateScoped}`);
+        if (_matchScopedValue === false) {
+            Loger.error(`update dont find this dom level point id ${id} needUpdateScoped ${needUpdateScoped}`);
+            return;
+        }
+
+        if (updateIndex === -1) {
+            controllerMaps[id].stepList.push(needUpdateScoped);
+            controllerMaps[id].stepList.sort(sortNumber());
+            if (_needRecord) {
+                controllerMaps[id].recordList.push(needUpdateScoped);
+                controllerMaps[id].recordList.sort(sortNumber());
+            }
+            if (_needTransit) {
+                controllerMaps[id].transitList.push(needUpdateScoped);
+                controllerMaps[id].transitList.sort(sortNumber());
+            }
+            if (_needOpenBoundary) {
+                controllerMaps[id].openBoundaryList.push(needUpdateScoped);
+                controllerMaps[id].openBoundaryList.sort(sortNumber());
+            }
+            if (_needScrollzone) {
+                controllerMaps[id].scrollzoneList.push(needUpdateScoped);
+                controllerMaps[id].scrollzoneList.sort(sortNumber());
+            }
+            if (needUpdateScoped === controllerMaps[id].stepList[0]) {
+                controllerMaps[id].domList.unshift(_updateDomList);
+                controllerMaps[id].dataList.unshift(_updateDataList);
+            } else if (needUpdateScoped === controllerMaps[id].stepList[controllerMaps[id].stepList.length - 1]) {
+                controllerMaps[id].domList.push(_updateDomList);
+                controllerMaps[id].dataList.push(_updateDataList);
+            } else {
+                const insertIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
+                controllerMaps[id].domList.splice(insertIndex, 0, _updateDomList);
+                controllerMaps[id].dataList.splice(insertIndex, 0, _updateDataList);
+            }
+        } else {
+            const scopedIndex = controllerMaps[id].stepList.indexOf(needUpdateScoped);
+            controllerMaps[id].domList[scopedIndex] = _updateDomList;
+            controllerMaps[id].dataList[scopedIndex] = _updateDataList;
+            if (controllerIds[wakeUpIndex] === id && controllerMaps[id].currentY !== needUpdateScoped) {
+                this.initDragScroll(id);
                 return;
             }
-
-            if (updateIndex === -1) {
-                controllerMaps[id].stepList.push(needUpdateScoped);
-                controllerMaps[id].stepList.sort(sortNumber());
-                if (_needRecord) {
-                    controllerMaps[id].recordList.push(needUpdateScoped);
-                    controllerMaps[id].recordList.sort(sortNumber());
-                }
-                if (_needTransit) {
-                    controllerMaps[id].transitList.push(needUpdateScoped);
-                    controllerMaps[id].transitList.sort(sortNumber());
-                }
-                if (_needOpenBoundary) {
-                    controllerMaps[id].openBoundaryList.push(needUpdateScoped);
-                    controllerMaps[id].openBoundaryList.sort(sortNumber());
-                }
-                if (_needScrollzone) {
-                    controllerMaps[id].scrollzoneList.push(needUpdateScoped);
-                    controllerMaps[id].scrollzoneList.sort(sortNumber());
-                }
-                if (needUpdateScoped === controllerMaps[id].stepList[0]) {
-                    controllerMaps[id].domList.unshift(_updateData);
-                } else if (needUpdateScoped === controllerMaps[id].stepList[controllerMaps[id].stepList.length - 1]) {
-                    controllerMaps[id].domList.push(_updateData);
-                } else {
-                    controllerMaps[id].domList.splice(controllerMaps[id].stepList.indexOf(needUpdateScoped), 0, _updateData);
-                }
+            if (controllerMaps[id].domList[controllerMaps[id].stepList.indexOf(needUpdateScoped)].length === 0) {
+                let _systemFindtIndexY = -1;
+                controllerMaps[id].domList.forEach((ele, index) => {
+                    if (ele.length > 0 && _systemFindtIndexY === -1) _systemFindtIndexY = index;
+                });
+                controllerMaps[id].lastY = controllerMaps[id].currentY;
+                controllerMaps[id].lastX = controllerMaps[id].currentX;
+                controllerMaps[id].currentY = controllerMaps[id].stepList[_systemFindtIndexY];
+                controllerMaps[id].currentX = 1;
             } else {
-                controllerMaps[id].domList[controllerMaps[id].stepList.indexOf(needUpdateScoped)] = _updateData;
-                if (controllerIds[wakeUpIndex] === id && controllerMaps[id].currentY !== needUpdateScoped) {
-                    return;
-                }
-                if (controllerMaps[id].domList[controllerMaps[id].stepList.indexOf(needUpdateScoped)].length === 0) {
-                    let _systemFindtIndexY = -1;
-                    controllerMaps[id].domList.forEach((ele, index) => {
-                        if (ele.length > 0 && _systemFindtIndexY === -1) {
-                            _systemFindtIndexY = index;
-                        }
-                    });
-                    controllerMaps[id].lastY = controllerMaps[id].currentY;
-                    controllerMaps[id].lastX = controllerMaps[id].currentX;
-                    controllerMaps[id].currentY = controllerMaps[id].stepList[_systemFindtIndexY];
-                    controllerMaps[id].currentX = 1;
-                } else {
-                    controllerMaps[id].lastY = controllerMaps[id].currentY;
-                    controllerMaps[id].lastX = controllerMaps[id].currentX;
-                    controllerMaps[id].currentY = needUpdateScoped;
-                    controllerMaps[id].currentX = 1;
-                }
-                if (controllerIds[wakeUpIndex] === id) {
-                    changeCurrentFocus({ currentMap: controllerMaps[id], direct: 'system' });
-                    this.currentScopeScroll({ currentMap: controllerMaps[id], direct: 'system' });
-                    this.currentMapScroll();
-                    runCallbackFn({ currentMap: controllerMaps[id], direct: 'system', isBoundary: false });
-                }
+                controllerMaps[id].lastY = controllerMaps[id].currentY;
+                controllerMaps[id].lastX = controllerMaps[id].currentX;
+                controllerMaps[id].currentY = needUpdateScoped;
+                controllerMaps[id].currentX = 1;
             }
-            this.initDragScroll(id);
-        } else {
-            Loger.warn(`updateData: don't init finished or ${id} is not exist`);
+            if (controllerIds[wakeUpIndex] === id) {
+                changeCurrentFocus({ currentMap: controllerMaps[id], direct: 'system' });
+                this.currentScopeScroll({ currentMap: controllerMaps[id], direct: 'system' });
+                this.currentMapScroll();
+                runCallbackFn({ currentMap: controllerMaps[id], direct: 'system', isBoundary: false });
+            }
         }
+        this.initDragScroll(id);
+    };
+
+    this.update = ({ id, needUpdateScoped }) => {
+        if (!id || needUpdateScoped == null) {
+            Loger.warn('update: id and needUpdateScoped are required');
+            return;
+        }
+        const key = `${id}_${needUpdateScoped}`;
+        if (updateDebounceTimers[key]) {
+            clearTimeout(updateDebounceTimers[key]);
+        }
+        updateDebounceTimers[key] = setTimeout(() => {
+            delete updateDebounceTimers[key];
+            doUpdatePayload(id, needUpdateScoped);
+        }, UPDATE_DEBOUNCE_MS);
     };
 
     /*
@@ -1462,10 +1654,17 @@ export function LayerScoper() {
         const _targetX = targetX || _next.currentX;
         Loger.info(`wakeUp _next ${controllerIds[controllerIds.indexOf(id)]}, _targetY: ${_targetY} _targetX: ${_targetX}`);
         const _currentNewYIndex = _next.stepList.indexOf(_targetY);
-        if (_currentNewYIndex >= 0 && _next.domList[_currentNewYIndex][_targetX - 1]) {
+        const targetRow = _next.domList[_currentNewYIndex];
+        const targetFocusNode = targetRow?.[_targetX - 1];
+        const targetValid = _currentNewYIndex >= 0 && targetFocusNode
+            && (typeof targetFocusNode.isConnected === 'undefined' || targetFocusNode.isConnected);
+        if (targetValid) {
             const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
             const _currentYIndex = currentMap.stepList.indexOf(currentMap.currentY);
-            currentMap.domList[_currentYIndex][currentMap.currentX - 1].classList.remove('focus');
+            const currentRow = currentMap.domList[_currentYIndex];
+            if (currentRow && currentRow[currentMap.currentX - 1]) {
+                currentRow[currentMap.currentX - 1].classList.remove('focus');
+            }
             wakeUpIndex = controllerIds.indexOf(id);
             const nextMap = controllerMaps[controllerIds[wakeUpIndex]];
             nextMap.domList[_currentNewYIndex][_targetX - 1].classList.add('focus');
@@ -1483,14 +1682,17 @@ export function LayerScoper() {
                 currentX: nextMap.currentX,
                 lastY: nextMap.lastY,
                 lastX: nextMap.lastX,
-                dataSource: backToData(nextMap?.domList[nextMap?.stepList.indexOf(nextMap.currentY)][nextMap.currentX - 1].attributes?.binddata?.value),
+                dataSource: nextMap?.dataList?.[nextMap?.stepList.indexOf(nextMap.currentY)]?.[nextMap.currentX - 1] ?? null,
             };
             nextMap?.callBackFn?.cbFocusChange && nextMap?.callBackFn?.cbFocusChange(cbData);
         } else {
-            Loger.error(`wakeUp targetY: ${_targetY} targetX: ${_targetX} is not exist in dom id: ${id}`);
+            Loger.error(`wakeUp targetY: ${_targetY} targetX: ${_targetX} is not exist or node not in document in id: ${id}, ensure update() was called after DOM ready`);
         }
     };
 
+    /*
+    将焦点移动到指定 (targetY, targetX)。列表异步渲染后务必先调用 update() 再调用 goToFocus，否则 domList 可能与 DOM 不一致导致落焦失败或落到错误节点。
+    */
     this.goToFocus = (params) => {
         Loger.info(`gotoFocus params:, ${JSON.stringify(params)}`);
         if (!params?.targetY || !params?.targetX || typeof params.targetY !== 'number' || typeof params.targetX !== 'number') {
@@ -1498,12 +1700,23 @@ export function LayerScoper() {
             return;
         }
         const currentMap = controllerMaps[controllerIds[wakeUpIndex]];
-        if (currentMap && currentMap?.stepList.indexOf(params.targetY) === -1) {
+        if (!currentMap) {
+            Loger.error('goToFocus: no current controller');
+            return;
+        }
+        const yIdx = currentMap.stepList.indexOf(params.targetY);
+        if (yIdx === -1) {
             Loger.error('this point targetY is not exist in current level case');
             return;
         }
-        if (!currentMap?.domList[currentMap.stepList.indexOf(params.targetY)][params.targetX - 1]) {
+        const row = currentMap.domList[yIdx];
+        const targetNode = row?.[params.targetX - 1];
+        if (!targetNode) {
             Loger.error('this point targetX is not exist in current level case');
+            return;
+        }
+        if (typeof targetNode.isConnected === 'boolean' && !targetNode.isConnected) {
+            Loger.warn('goToFocus: target node is not in document, call update() after DOM is ready');
             return;
         }
         currentMap.lastY = currentMap.currentY;
@@ -1531,29 +1744,38 @@ export function LayerScoper() {
             return;
         }
         const _needScopedIndex = _needChangedMap.stepList.indexOf(obj.targetY);
-        if (parseFloat(_needChangedMap?.domList[_needScopedIndex][obj.targetX - 1]?.attributes?.x.value) === obj.targetX) {
+        const _row = _needChangedMap.domList?.[_needScopedIndex];
+        const _targetNode = _row?.[obj.targetX - 1];
+        const _targetValid = _needScopedIndex !== -1 && _row && _targetNode
+            && (typeof _targetNode.isConnected === 'undefined' || _targetNode.isConnected)
+            && parseFloat(_targetNode.attributes?.x?.value) === obj.targetX;
+        if (_targetValid) {
             if (_needChangedMap?.recordList.indexOf(obj.targetY) !== -1) {
                 _needChangedMap.domList[_needScopedIndex].forEach((ele) => {
+                    if (!ele || (typeof ele.isConnected !== 'undefined' && !ele.isConnected)) return;
                     ele.classList.remove('selected');
-                    if (parseFloat(ele.attributes.x.value) === obj.targetX) {
+                    if (parseFloat(ele.attributes?.x?.value) === obj.targetX) {
                         ele.classList.add('selected');
                     }
                 });
                 const selectedEle = _needChangedMap.domList[_needScopedIndex][obj.targetX - 1];
+                const selectedData = _needChangedMap.dataList?.[_needScopedIndex]?.[obj.targetX - 1] ?? null;
                 if (_needChangedMap?.callBackFn?.cbScopeSelectedChange && typeof _needChangedMap.callBackFn.cbScopeSelectedChange === 'function') {
                     _needChangedMap.callBackFn.cbScopeSelectedChange({
                         id: obj.id,
                         targetY: obj.targetY,
                         targetX: obj.targetX,
                         locationName: selectedEle?.attributes?.locationname?.value || '',
-                        dataSource: backToData(selectedEle?.attributes?.binddata?.value),
+                        dataSource: selectedData,
                     });
                 }
             } else {
                 Loger.error(`setScopeSelectedItem: scoped-${obj.targetY} is not set remembered`);
             }
+        } else if (!_row || _needScopedIndex === -1) {
+            Loger.error(`setScopeSelectedItem: scoped-${obj.targetY}-${obj.targetX} row or index not exist`);
         } else {
-            Loger.error(`setScopeSelectedItem: scoped-${obj.targetY}-${obj.targetX} is not exist`);
+            Loger.error(`setScopeSelectedItem: scoped-${obj.targetY}-${obj.targetX} is not exist or node not in document`);
         }
     };
 
@@ -1728,7 +1950,7 @@ export function LayerScoper() {
             return null;
         }
         const locationName = selectedDom.attributes?.locationname?.value || '';
-        const dataSource = backToData(selectedDom.attributes?.binddata?.value);
+        const dataSource = currentMap.dataList?.[scopedIndex]?.[targetX - 1] ?? null;
         return {
             id: obj.id,
             targetY: obj.targetY,
