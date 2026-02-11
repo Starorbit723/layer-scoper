@@ -1375,6 +1375,7 @@ export function LayerScoper() {
     初始化实例
     */
     this.initController = (params) => {
+        Loger.warn('layer-scoper @1.0.4');
         const safeParams = {
             id: params.id,
             className: params.className,

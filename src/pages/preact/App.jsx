@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import '@/assets/css/global.less';
 import { AsideContent } from '@/components/preact/AsideContent.jsx';
-import { LayerScoper } from '../../../plugin/layerScoper.js';
+import LayerScoper from 'layer-scoper';
 import logo from '@/assets/images/logo-page.png';
 
 // 创建 LayerScoper 实例（在模块级别，避免重复创建）
