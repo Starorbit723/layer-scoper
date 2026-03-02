@@ -161,13 +161,17 @@ export const twoPointDistanceSameScoped = ({ currentPoint, nextEle, direct }) =>
 };
 
 export const scopedCompare = () => (a, b) => {
-    const value1 = a.attributes['data-scoped'].value;
-    const value2 = b.attributes['data-scoped'].value;
-    if (value1 === value2) {
-        Loger.error(`same scoped number is not allowed, scoped=${value1}`);
-        throw new Error(`Same scoped number is not allowed, scoped=${value1}`);
+    const num1 = parseFloat(a.attributes['data-scoped'].value);
+    const num2 = parseFloat(b.attributes['data-scoped'].value);
+    if (Number.isNaN(num1) || Number.isNaN(num2)) {
+        Loger.error('data-scoped must be numeric');
+        throw new Error('data-scoped must be numeric');
     }
-    return value1 - value2;
+    if (num1 === num2) {
+        Loger.error(`same scoped number is not allowed, scoped=${num1}`);
+        throw new Error(`Same scoped number is not allowed, scoped=${num1}`);
+    }
+    return num1 - num2;
 };
 
 
@@ -364,10 +368,6 @@ export function LayerScoper() {
 
     // 当前唤醒实例
     let wakeUpIndex = 0;
-
-    // update 防抖：同一 (id, needUpdateScoped) 在短时间内多次调用只执行最后一次，避免 DOM 未稳定时重复刷新
-    const updateDebounceTimers = {};
-    const UPDATE_DEBOUNCE_MS = 32;
 
     // 多实例存储（同一 LayerScoper 实例内共享；多实例切换依赖 controllerIds + wakeUpIndex）
     const controllerMaps = {
@@ -1375,7 +1375,6 @@ export function LayerScoper() {
     初始化实例
     */
     this.initController = (params) => {
-        Loger.warn('layer-scoper @1.0.4');
         const safeParams = {
             id: params.id,
             className: params.className,
@@ -1628,14 +1627,9 @@ export function LayerScoper() {
             Loger.warn('update: id and needUpdateScoped are required');
             return;
         }
-        const key = `${id}_${needUpdateScoped}`;
-        if (updateDebounceTimers[key]) {
-            clearTimeout(updateDebounceTimers[key]);
-        }
-        updateDebounceTimers[key] = setTimeout(() => {
-            delete updateDebounceTimers[key];
-            doUpdatePayload(id, needUpdateScoped);
-        }, UPDATE_DEBOUNCE_MS);
+        // 以前这里带防抖（UPDATE_DEBOUNCE_MS），现在按业务场景简化为同步执行：
+        // 调用方本身不会在极短时间内高频 update 同一 scope，去掉防抖可以减少时序问题。
+        doUpdatePayload(id, needUpdateScoped);
     };
 
     /*
@@ -1783,6 +1777,11 @@ export function LayerScoper() {
     /**
      * 滚动停止后：找距离滚动区可视中心最近的 .incontroll，设为 selected 选中态（仅对 remembered 的 scope 生效）
      * 内置 150ms 防抖，连续滚动时只在停止后执行一次；同时将 focus 同步到同一项
+     *
+     * 使用策略：
+     * - 建议只在用户「拖拽 / 滚轮」触发的 scroll 回调（cbScrollzoneScroll）中调用，用于“滚完自动吸附到最近一项”
+     * - 不要在程序性滚动（如 scopeSelectedItemScrollToMiddle / currentScopeScroll）后再调用，否则会出现往返滚动
+     *
      * @param {Object} obj - { id: string, targetY: number }
      */
     this.rollingScopeSelectedItemClosestToCenter = (() => {
@@ -1859,6 +1858,11 @@ export function LayerScoper() {
     /**
      * 将指定 scope 下 “选中项” 滚动到可视区域中间（不改变焦点，因为焦点可能在别的 scope 下）
      * 根据 DOM 中 .incontroll.selected 实时查找选中项，无需传 targetX
+     *
+     * 使用策略：
+     * - 适用于业务代码通过 setScopeSelectedItem / 初始化逻辑“主动改选中项”之后，想让这项出现在 scrollzone 可视区域中间的场景
+     * - 会设置 programAutoScrollAction，配合 addNewLevelData 里的 scroll 监听，避免触发 cbScrollzoneScroll → rollingScopeSelectedItemClosestToCenter 的连锁滚动
+     *
      * @param {Object} obj - { id: string, targetY: number }
      */
     this.scopeSelectedItemScrollToMiddle = (obj) => {
