@@ -26,11 +26,20 @@ const Loger = new LogPrint();
     如果是 vmax 为单位的，则需要根据实际屏幕宽度计算倍率
 */
 let ScrrenMultipler = 1;
+let CssUsedScrrenMultipler = false;
 
 export function setScreenMultiplier(value) {
     ScrrenMultipler = value;
 }
 
+// 仅用于调试 / 插件封装：读取当前缩放配置
+export function getScreenMultiplier() {
+    return ScrrenMultipler;
+}
+
+export function getCssUsedScrrenMultipler() {
+    return CssUsedScrrenMultipler;
+}
 
 /**
  * animateUtils的最基本的方法
@@ -193,7 +202,7 @@ export const runCallbackFn = ({ currentMap, direct, isBoundary, domEle }) => {
         dataSource: currentMap?.dataList?.[_yIdx]?.[_xIdx] ?? null,
     };
 
-    // 默认方式移动焦点时，添加回弹动画，如果走了手动方式，需要开发者手动触发动画或者不触发动画
+    // 默认方式移动焦点时，添加回弹动画
     if (isBoundary && domEle && (typeof domEle.isConnected === 'undefined' || domEle.isConnected)) {
         Loger.info(`bounce-${direct}`);
         if (direct === 'left' || direct === 'right') {
@@ -379,6 +388,7 @@ export function LayerScoper() {
         //   recordList: [],               // 带 remembered 的 scope 列表
         //   openBoundaryList: [],
         //   scrollzoneList: [],           // 带 scrollzone 的 scope 列表
+        //   scrollViewCasesDefined: [],   // ScrollView 插件实例与 scope 对应关系列表 [{ scope, target }]
         //   lastY: -1,
         //   lastX: -1,
         //   currentY: -1,
@@ -395,6 +405,10 @@ export function LayerScoper() {
         //     innerHeight: -1,
         //   },
         //   programAutoScrollAction: null,// 程序性滚动时标记当前 scopeY，scroll 监听里用来忽略这次回调
+        //   // 示例（插件挂载）：
+        //   // scrollViewCasesDefined: [
+        //   //   { scope: 1, target: new LayerScoperScrollView({ id: 'layer-scrollview-id' }) },
+        //   // ],
         // },
         // dialog-content: {
         //   domList: [],
@@ -681,6 +695,19 @@ export function LayerScoper() {
             }
             return;
         }
+        // ScrollView 插件桥接：
+        // - 当前 scope 若配置了 ScrollViewCase，则优先交给插件处理“向下”滚动
+        // - 插件返回 true 代表已消费本次方向键（保持在当前 scope）
+        // - 插件返回 false 则继续走默认换 scope 逻辑
+        const scrollViewCases = currentMap.scrollViewCasesDefined || [];
+        const scrollViewItem = scrollViewCases.find(item => item && item.scope === currentMap.currentY);
+        if (scrollViewItem && scrollViewItem.target && typeof scrollViewItem.target.onFocusDown === 'function') {
+            const handled = scrollViewItem.target.onFocusDown();
+            if (handled) {
+                return;
+            }
+        }
+
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.godown?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.godown?.value]) === 'function') {
             try {
@@ -792,6 +819,17 @@ export function LayerScoper() {
             }
             return;
         }
+        // ScrollView 插件桥接：如果当前 scope 配置了 ScrollViewCase，则优先交给插件处理“向上”滚动；
+        // 若插件返回 false（已到顶部），则继续走默认换 scope 逻辑
+        const scrollViewCases = currentMap.scrollViewCasesDefined || [];
+        const scrollViewItem = scrollViewCases.find(item => item && item.scope === currentMap.currentY);
+        if (scrollViewItem && scrollViewItem.target && typeof scrollViewItem.target.onFocusUp === 'function') {
+            const handled = scrollViewItem.target.onFocusUp();
+            if (handled) {
+                return;
+            }
+        }
+
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goup?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goup?.value]) === 'function') {
             try {
@@ -903,6 +941,17 @@ export function LayerScoper() {
             }
             return;
         }
+        // ScrollView 插件桥接：如果当前 scope 配置了 ScrollViewCase，则优先交给插件处理“向左”滚动；
+        // 若插件返回 false（已到最左侧或未处理），则继续走默认换 scope 逻辑
+        const scrollViewCases = currentMap.scrollViewCasesDefined || [];
+        const scrollViewItem = scrollViewCases.find(item => item && item.scope === currentMap.currentY);
+        if (scrollViewItem && scrollViewItem.target && typeof scrollViewItem.target.onFocusLeft === 'function') {
+            const handled = scrollViewItem.target.onFocusLeft();
+            if (handled) {
+                return;
+            }
+        }
+
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goleft?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goleft?.value]) === 'function') {
             try {
@@ -971,6 +1020,17 @@ export function LayerScoper() {
             }
             return;
         }
+        // ScrollView 插件桥接：如果当前 scope 配置了 ScrollViewCase，则优先交给插件处理“向右”滚动；
+        // 若插件返回 false（已到最右侧或未处理），则继续走默认换 scope 逻辑
+        const scrollViewCases = currentMap.scrollViewCasesDefined || [];
+        const scrollViewItem = scrollViewCases.find(item => item && item.scope === currentMap.currentY);
+        if (scrollViewItem && scrollViewItem.target && typeof scrollViewItem.target.onFocusRight === 'function') {
+            const handled = scrollViewItem.target.onFocusRight();
+            if (handled) {
+                return;
+            }
+        }
+
         const _target = document.getElementById(controllerIds[wakeUpIndex]).getElementsByClassName('focus');
         if (_target[0]?.attributes?.goright?.value && (typeof currentMap?.selfDefinedCallBackFn[_target[0]?.attributes?.goright?.value]) === 'function') {
             try {
@@ -1225,44 +1285,42 @@ export function LayerScoper() {
                 const style = document.createElement('style');
                 style.type = 'text/css';
                 style.innerHTML = `
-            #${params.id}::-webkit-scrollbar {
-            width: ${params.scrollBarConfig.trackWidth || '8px'};
-            height: ${params.scrollBarConfig.trackWidth || '8px'};
-            }
-            #${params.id}::-webkit-scrollbar-track {
-            background: ${params.scrollBarConfig.trackBackground || 'none'};
-            border-radius: ${params.scrollBarConfig.trackBorderRadius || 0};
-            }
-            #${params.id}::-webkit-scrollbar-thumb {
-            background: ${params.scrollBarConfig.thumbColor || 'rgba(255,255,255,0)'};
-            border-radius: ${params.scrollBarConfig.thumbBorderRadius || '4px'};
-            border-width: ${params.scrollBarConfig.thumbBorderWidth || 0};
-            border-color: ${params.scrollBarConfig.thumbBorderColor || 'none'};
-            border-style: 'solid';
-            }
-            #${params.id}::-webkit-scrollbar-thumb:hover {
-            background: ${params.scrollBarConfig.thumbHoverColor || 'rgba(255,255,255,0)'};
-            }
-        `;
+                    #${params.id}::-webkit-scrollbar {
+                    width: ${params.scrollBarConfig.trackWidth || '8px'};
+                    height: ${params.scrollBarConfig.trackWidth || '8px'};
+                    }
+                    #${params.id}::-webkit-scrollbar-track {
+                    background: ${params.scrollBarConfig.trackBackground || 'none'};
+                    border-radius: ${params.scrollBarConfig.trackBorderRadius || 0};
+                    }
+                    #${params.id}::-webkit-scrollbar-thumb {
+                    background: ${params.scrollBarConfig.thumbColor || 'rgba(255,255,255,0)'};
+                    border-radius: ${params.scrollBarConfig.thumbBorderRadius || '4px'};
+                    border-style: 'solid';
+                    }
+                    #${params.id}::-webkit-scrollbar-thumb:hover {
+                    background: ${params.scrollBarConfig.thumbHoverColor || 'rgba(255,255,255,0)'};
+                    }
+                `;
                 document.getElementsByTagName('head')[0].appendChild(style);
             } else {
                 const style = document.createElement('style');
                 style.type = 'text/css';
                 style.innerHTML = `
-            #${params.id}::-webkit-scrollbar {
-            display: none;
-            width: 0;
-            height: 0;
-            }
-            #${params.id}::-webkit-scrollbar-track {
-            display: none;
-            background: none;
-            }
-            #${params.id}::-webkit-scrollbar-thumb {
-            display: none;
-            background: none;
-            }
-        `;
+                    #${params.id}::-webkit-scrollbar {
+                    display: none;
+                    width: 0;
+                    height: 0;
+                    }
+                    #${params.id}::-webkit-scrollbar-track {
+                    display: none;
+                    background: none;
+                    }
+                    #${params.id}::-webkit-scrollbar-thumb {
+                    display: none;
+                    background: none;
+                    }
+                `;
                 document.getElementsByTagName('head')[0].appendChild(style);
             }
         }
@@ -1283,6 +1341,7 @@ export function LayerScoper() {
         controllerMaps[controllerIds[creatIndex]].recordList = [];
         controllerMaps[controllerIds[creatIndex]].openBoundaryList = [];
         controllerMaps[controllerIds[creatIndex]].scrollzoneList = [];
+        controllerMaps[controllerIds[creatIndex]].scrollViewCasesDefined = [];
 
         _scopedList.forEach((ele) => {
             if (ele.querySelectorAll('.incontroll').length > 0) {
@@ -1336,12 +1395,22 @@ export function LayerScoper() {
             Loger.error(`addNewLevelData default focus y: ${params.defaultPoint.y} x: ${params.defaultPoint.x} is not exist`);
             delete controllerMaps[params.id];
             controllerIds.splice(creatIndex, 1);
-            Loger.error('addNewLevelData controller fali to add new level case');
+            Loger.error('addNewLevelData controller failed to add new level case');
             return;
         }
         controllerMaps[controllerIds[creatIndex]].controllerId = params.id;
         if (params?.callBackFn) {
             controllerMaps[controllerIds[creatIndex]].callBackFn = Object.assign({}, params?.callBackFn);
+        }
+        // ScrollView 插件定义：记录 scope 与插件实例的对应关系，便于后续在核心内统一分发方向键
+        // 约定：插件只需暴露 onFocusUp/Down/Left/Right，并返回是否“消费”本次方向键
+        if (params?.scrollViewComponentConfig && Array.isArray(params.scrollViewComponentConfig)) {
+            controllerMaps[controllerIds[creatIndex]].scrollViewCasesDefined = (controllerMaps[controllerIds[creatIndex]].scrollViewCasesDefined || []).concat(
+                params.scrollViewComponentConfig.map(item => ({
+                    scope: item.scope,
+                    target: item.target,
+                })),
+            );
         }
         if (params?.selfDefinedCallBackFn) {
             controllerMaps[controllerIds[creatIndex]].selfDefinedCallBackFn = Object.assign({}, params?.selfDefinedCallBackFn);
@@ -1386,6 +1455,7 @@ export function LayerScoper() {
             scrollBarConfig: params.scrollBarConfig,
             openAnimate: params.openAnimate,
         };
+        CssUsedScrrenMultipler = !!params.cssUsedScrrenMultipler;
         Loger.info(`initController: params = ${JSON.stringify(safeParams)}`);
         if (isInitFinish) {
             return;
