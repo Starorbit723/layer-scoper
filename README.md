@@ -9,12 +9,39 @@ npm 安装
 
 默认安装最新版本:   npm install layer-scoper
 
-安装指定版本:   npm install layer-scoper@1.0.0
+安装指定版本:   npm install layer-scoper@1.0.5
 
 
 ## 简介
 
 一款能够同时支持 键盘/遥控/鼠标/触屏 交互的浏览器前端外骨骼交互框架
+
+### 插件支持
+
+包内 `plugin` 目录下包含四个可单独使用的模块：
+
+- `layerScoper.js` / `layerScoper.min.js`（核心逻辑）
+- `LayerScoperScrollView.js` / `LayerScoperScrollView.min.js`（滚动视图小插件）
+
+安装 npm 包后，你可以直接从根路径导入这些模块：
+
+```js
+// 从根路径导入——通常推荐的写法
+import { LayerScoper, LayerScoperScrollView } from 'layer-scoper';
+
+// 或者按具体文件路径引入
+import { LayerScoper } from 'layer-scoper/plugin/layerScoper.js';
+import { LayerScoperScrollView } from 'layer-scoper/plugin/LayerScoperScrollView.js';
+
+// 如果你需要小尺寸版本：
+import { LayerScoper } from 'layer-scoper/plugin/layerScoper.min.js';
+import { LayerScoperScrollView } from 'layer-scoper/plugin/LayerScoperScrollView.min.js';
+```
+
+以上 import 方式在 npm 安装 `layer-scoper` 后即可使用，打包工具（webpack/vite/rollup）会根据 `package.json` 的 `exports` 字段正确定位模块。
+
+为了兼容 ESM `exports` 字段已经列出了所有四个文件，发布时也会把它们包含在 `files` 中。
+
 
 随着Web响应式适配的发展以及性能提升，越来越多的应用会引入一部分Web-Html来进行与原生混合开发。Web模式开发在产品快速迭代，热更新等方面拥有更灵活的优势。
 

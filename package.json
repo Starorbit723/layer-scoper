@@ -53,10 +53,25 @@
     ".": {
       "import": "./index.js",
       "default": "./index.js"
+    },
+    "./plugin/layerScoper.js": {
+      "import": "./plugin/layerScoper.js"
+    },
+    "./plugin/layerScoper.min.js": {
+      "import": "./plugin/layerScoper.min.js"
+    },
+    "./plugin/LayerScoperScrollView.js": {
+      "import": "./plugin/LayerScoperScrollView.js"
+    },
+    "./plugin/LayerScoperScrollView.min.js": {
+      "import": "./plugin/LayerScoperScrollView.min.js"
     }
   },
   "files": [
     "plugin/layerScoper.js",
+    "plugin/layerScoper.min.js",
+    "plugin/LayerScoperScrollView.js",
+    "plugin/LayerScoperScrollView.min.js",
     "index.js",
     "LICENSE",
     "README.md"
